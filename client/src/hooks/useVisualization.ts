@@ -139,6 +139,13 @@ export function useVisualization({
       .on("click", (_event, d) => {
         setSelectedNode(d);
         if (onNodeClick) onNodeClick(d);
+      })
+      .on("dblclick", (_event, d) => {
+        // Import dynamically to avoid circular dependencies
+        import("@/lib/utils").then(({ openInSolscan }) => {
+          // Open in Solscan on double-click
+          openInSolscan(d.address);
+        });
       });
     
     // Add circles to nodes

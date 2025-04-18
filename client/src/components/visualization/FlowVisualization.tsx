@@ -232,8 +232,14 @@ export default function FlowVisualization({
       {/* Visualization Canvas */}
       <div className="relative w-full h-[400px]" ref={containerRef}>
         {/* This div will be populated by D3.js visualization in the useVisualization hook */}
+        {/* Visualization Tip */}
+        <div className="absolute top-2 left-2 z-10 bg-solana-dark-light bg-opacity-80 px-2 py-1 rounded-md shadow-md text-xs text-gray-300 flex items-center space-x-1.5">
+          <span className="text-solana-primary">Tip:</span>
+          <span>Double-click any node to view in Solscan</span>
+        </div>
+        
         {filteredWalletAddress && (
-          <div className="absolute top-2 left-2 bg-solana-dark px-3 py-1 rounded-md flex items-center space-x-2 text-xs">
+          <div className="absolute top-10 left-2 bg-solana-dark px-3 py-1 rounded-md flex items-center space-x-2 text-xs">
             <FilterIcon className="h-3 w-3 text-solana-primary" />
             <span className="text-white">Filtering by: {shortenAddress(filteredWalletAddress)}</span>
             <Button 
@@ -297,6 +303,9 @@ export default function FlowVisualization({
               </div>
             )}
           </div>
+          <div className="text-[10px] text-gray-400 mb-1 italic flex items-center justify-center">
+            <span>Double-click nodes to open in Solscan</span>
+          </div>
           <div className="flex space-x-2">
             <Button 
               variant={filteredWalletAddress === selectedNode.address ? "default" : "outline"}
@@ -325,17 +334,6 @@ export default function FlowVisualization({
                   <span>Filter By Node</span>
                 </>
               )}
-            </Button>
-            <Button 
-              className="bg-solana-primary text-white px-2 py-1 rounded text-[10px] flex-1"
-              onClick={() => {
-                if (selectedNode) {
-                  // Open the address in Solscan
-                  openInSolscan(selectedNode.address);
-                }
-              }}
-            >
-              View in Solscan
             </Button>
           </div>
         </div>
