@@ -4,7 +4,7 @@ import { VisualizationGraph, WalletNode, TransactionEdge } from "@/types/solana"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { shortenAddress, formatSolAmount, formatTimeAgo } from "@/lib/utils";
+import { shortenAddress, formatSolAmount, formatTimeAgo, openInSolscan } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { HelpCircle, ZoomIn, ZoomOut, Maximize, Download, Share2, Filter as FilterIcon } from "lucide-react";
 
@@ -330,10 +330,8 @@ export default function FlowVisualization({
               className="bg-solana-primary text-white px-2 py-1 rounded text-[10px] flex-1"
               onClick={() => {
                 if (selectedNode) {
-                  // Use the openInSolscan utility to open the address in Solscan
-                  import("@/lib/utils").then(({ openInSolscan }) => {
-                    openInSolscan(selectedNode.address);
-                  });
+                  // Open the address in Solscan
+                  openInSolscan(selectedNode.address);
                 }
               }}
             >
