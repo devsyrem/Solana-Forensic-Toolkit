@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolFlow - Transaction Flow Visualization</title>
+    <!-- D3.js for visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            background-color: #0F172A;
+            color: #F8FAFC;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        header {
+            padding: 1rem 1.5rem;
+            background-color: #1E293B;
+            border-bottom: 1px solid #334155;
+        }
+        h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(to right, #14F195, #9945FF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 0.875rem;
+            color: #94A3B8;
+            margin-top: 0.25rem;
+        }
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 300px;
+            background-color: #1E293B;
+            border-right: 1px solid #334155;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .visualization-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+        .filter-group h3 {
+            font-size: 1rem;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: #F8FAFC;
+        }
+        .filter-control {
+            margin-bottom: 0.75rem;
+        }
+        .filter-control label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.75rem;
+            color: #94A3B8;
+        }
+        .filter-control input, .filter-control select {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: #0F172A;
+            border: 1px solid #334155;
+            border-radius: 0.25rem;
+            color: #F8FAFC;
+            font-size: 0.875rem;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            background-color: #0F172A;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+        }
+        .checkbox-item input {
+            margin-right: 0.25rem;
+        }
+        .button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #9945FF;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #8035e0;
+        }
+        .button.secondary {
+            background-color: #334155;
+        }
+        .button.secondary:hover {
+            background-color: #475569;
+        }
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+        .controls button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #1E293B;
+            border: 1px solid #334155;
+            color: #F8FAFC;
+            font-size: 1.25rem;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #334155;
+        }
+        .status-bar {
+            padding: 0.5rem 1rem;
+            background-color: #1E293B;
+            border-top: 1px solid #334155;
+            font-size: 0.75rem;
+            color: #94A3B8;
+            display: flex;
+            justify-content: space-between;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 0.5rem;
+            background-color: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 300px;
+        }
+        .node {
+            cursor: pointer;
+        }
+        .node:hover {
+            stroke: #9945FF;
+            stroke-width: 2px;
+        }
+        .link {
+            stroke-opacity: 0.6;
+            stroke-width: 1.5px;
+        }
+        .link:hover {
+            stroke-opacity: 1;
+            stroke-width: 2.5px;
+        }
+        .critical-path {
+            stroke: #ff4500 !important;
+            stroke-width: 3px !important;
+            stroke-opacity: 1 !important;
+        }
+        .selected-node {
+            stroke: #14F195 !important;
+            stroke-width: 3px !important;
+        }
+        .wallet-info {
+            background-color: #1E293B;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            border: 1px solid #334155;
+        }
+        .wallet-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+        }
+        .wallet-label {
+            color: #94A3B8;
+        }
+        .wallet-value {
+            font-family: monospace;
+        }
+        .transaction-info {
+            background-color: #1E293B;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            border: 1px solid #334155;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(15, 23, 42, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(153, 69, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #9945FF;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .no-data {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #94A3B8;
+        }
+        .diagnostics {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: rgba(15, 23, 42, 0.9);
+            border: 1px solid #334155;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            z-index: 1000;
+            display: none;
+        }
+        .log-entry {
+            margin-bottom: 0.25rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 0.25rem;
+        }
+        .search-bar {
+            display: flex;
+            padding: 0.5rem;
+            background-color: #1E293B;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+        }
+        .search-bar input {
+            flex: 1;
+            background-color: transparent;
+            border: none;
+            color: #F8FAFC;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .search-bar input:focus {
+            outline: none;
+        }
+        .search-bar button {
+            background-color: #9945FF;
+            border: none;
+            border-radius: 0.25rem;
+            color: white;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SolFlow: Transaction Flow Visualization</h1>
+            <div class="subtitle" id="wallet-subtitle">Visualizing transactions for wallet</div>
+        </header>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Enter wallet address">
+                    <button id="search-button">Search</button>
+                </div>
+                
+                <div class="filter-group">
+                    <h3>Date Range</h3>
+                    <div class="filter-control">
+                        <label for="start-date">Start Date</label>
+                        <input type="date" id="start-date">
+                    </div>
+                    <div class="filter-control">
+                        <label for="end-date">End Date</label>
+                        <input type="date" id="end-date">
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <h3>Amount Range (SOL)</h3>
+                    <div class="filter-control">
+                        <label for="min-amount">Minimum</label>
+                        <input type="number" id="min-amount" min="0" step="0.01" placeholder="0">
+                    </div>
+                    <div class="filter-control">
+                        <label for="max-amount">Maximum</label>
+                        <input type="number" id="max-amount" min="0" step="0.01" placeholder="Max">
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <h3>Transaction Types</h3>
+                    <div class="checkbox-group" id="transaction-types">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="type-transfer" value="transfer" checked>
+                            <label for="type-transfer">Transfer</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="type-swap" value="swap" checked>
+                            <label for="type-swap">Swap</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="type-nft" value="nft" checked>
+                            <label for="type-nft">NFT</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="type-defi" value="defi" checked>
+                            <label for="type-defi">DeFi</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="type-other" value="other" checked>
+                            <label for="type-other">Other</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <h3>Display Options</h3>
+                    <div class="filter-control">
+                        <label for="node-limit">Max Nodes</label>
+                        <input type="number" id="node-limit" min="5" max="100" value="30">
+                    </div>
+                    <div class="filter-control">
+                        <label for="layout-type">Layout Type</label>
+                        <select id="layout-type">
+                            <option value="force">Force Directed</option>
+                            <option value="radial">Radial</option>
+                            <option value="hierarchy">Hierarchical</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="highlight-critical" checked>
+                        <label for="highlight-critical">Highlight Critical Paths</label>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="apply-filters" class="button">Apply Filters</button>
+                    <button id="reset-filters" class="button secondary">Reset</button>
+                </div>
+                
+                <div id="selected-info"></div>
+            </div>
+            
+            <div class="visualization-container">
+                <div class="controls">
+                    <button id="zoom-in">+</button>
+                    <button id="zoom-out">-</button>
+                    <button id="reset-zoom">⟲</button>
+                </div>
+                <svg id="visualization-svg"></svg>
+                <div id="no-data" class="no-data" style="display: none;">
+                    <h3>No Transaction Data</h3>
+                    <p>Enter a wallet address to visualize its transaction flows</p>
+                </div>
+                <div id="loading-overlay" class="loading-overlay">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div id="status-text">Ready</div>
+            <div id="node-count">Nodes: 0 | Edges: 0</div>
+        </div>
+        
+        <div id="diagnostics" class="diagnostics"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let graph = { nodes: [], edges: [] };
+        let simulation;
+        let svg, g;
+        let width, height;
+        let currentZoom = 1;
+        let selectedNode = null;
+        let selectedEdge = null;
+        let tooltip;
+        
+        // Shorthand for document.getElementById
+        function $(id) {
+            return document.getElementById(id);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initVisualization();
+            setupEventListeners();
+            setupTooltip();
+            log('Visualization page loaded');
+            
+            // Show no data message initially
+            $('no-data').style.display = 'block';
+            $('loading-overlay').style.display = 'none';
+            
+            // Set default dates (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            $('start-date').valueAsDate = thirtyDaysAgo;
+            $('end-date').valueAsDate = today;
+            
+            // Check for wallet address in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const walletAddress = urlParams.get('wallet');
+            
+            if (walletAddress) {
+                $('search-input').value = walletAddress;
+                fetchWalletData(walletAddress);
+            }
+        });
+        
+        // Initialize the visualization space
+        function initVisualization() {
+            svg = d3.select('#visualization-svg');
+            
+            // Get container dimensions
+            const container = document.querySelector('.visualization-container');
+            width = container.clientWidth;
+            height = container.clientHeight;
+            
+            // Set SVG dimensions
+            svg.attr('width', width).attr('height', height);
+            
+            // Create a group element for zoom/pan
+            g = svg.append('g');
+            
+            // Setup zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 4])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                    currentZoom = event.transform.k;
+                });
+            
+            svg.call(zoom);
+            
+            // Initialize simulation
+            simulation = d3.forceSimulation()
+                .force('link', d3.forceLink().id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .on('tick', ticked);
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search button
+            $('search-button').addEventListener('click', () => {
+                const address = $('search-input').value.trim();
+                if (address) {
+                    fetchWalletData(address);
+                }
+            });
+            
+            // Search input (Enter key)
+            $('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const address = $('search-input').value.trim();
+                    if (address) {
+                        fetchWalletData(address);
+                    }
+                }
+            });
+            
+            // Filter apply button
+            $('apply-filters').addEventListener('click', applyFilters);
+            
+            // Filter reset button
+            $('reset-filters').addEventListener('click', resetFilters);
+            
+            // Zoom controls
+            $('zoom-in').addEventListener('click', zoomIn);
+            $('zoom-out').addEventListener('click', zoomOut);
+            $('reset-zoom').addEventListener('click', resetZoom);
+            
+            // Window resize
+            window.addEventListener('resize', () => {
+                const container = document.querySelector('.visualization-container');
+                width = container.clientWidth;
+                height = container.clientHeight;
+                svg.attr('width', width).attr('height', height);
+                
+                if (simulation) {
+                    simulation.force('center', d3.forceCenter(width / 2, height / 2));
+                    simulation.alpha(0.3).restart();
+                }
+            });
+        }
+        
+        // Setup tooltip
+        function setupTooltip() {
+            tooltip = d3.select('body').append('div')
+                .attr('class', 'tooltip')
+                .style('opacity', 0);
+        }
+        
+        // Fetch wallet data
+        async function fetchWalletData(address) {
+            if (!isValidSolanaAddress(address)) {
+                alert('Please enter a valid Solana wallet address');
+                return;
+            }
+            
+            // Update state and show loading
+            $('wallet-subtitle').textContent = `Visualizing transactions for wallet: ${shortenAddress(address)}`;
+            $('no-data').style.display = 'none';
+            $('loading-overlay').style.display = 'flex';
+            $('status-text').textContent = 'Loading wallet data...';
+            
+            try {
+                log(`Fetching transactions for wallet: ${address}`);
+                
+                // First get basic wallet info
+                const walletResponse = await fetch(`/api/solana/account/${address}`);
+                if (!walletResponse.ok) {
+                    throw new Error(`Error fetching wallet: ${walletResponse.status}`);
+                }
+                
+                const walletData = await walletResponse.json();
+                log(`Found wallet with balance: ${walletData.balance} SOL`);
+                
+                // Then get transactions
+                const txLimit = $('node-limit').value || 30;
+                const txResponse = await fetch(`/api/solana/transactions/${address}?limit=${txLimit}`);
+                
+                if (!txResponse.ok) {
+                    throw new Error(`Error fetching transactions: ${txResponse.status}`);
+                }
+                
+                const transactions = await txResponse.json();
+                log(`Retrieved ${transactions.length} transactions`);
+                
+                if (transactions.length === 0) {
+                    $('loading-overlay').style.display = 'none';
+                    $('no-data').style.display = 'block';
+                    $('status-text').textContent = 'No transactions found for this wallet';
+                    $('node-count').textContent = 'Nodes: 0 | Edges: 0';
+                    return;
+                }
+                
+                // Create a sample visualization graph (in a real app, we would process the transaction data)
+                createSampleGraph(address, transactions);
+                
+                // Update status
+                $('status-text').textContent = 'Transaction data loaded';
+                $('node-count').textContent = `Nodes: ${graph.nodes.length} | Edges: ${graph.edges.length}`;
+                
+                // Render the visualization
+                renderGraph();
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                $('status-text').textContent = `Error: ${error.message}`;
+                $('no-data').style.display = 'block';
+                $('no-data').innerHTML = `
+                    <h3>Error Loading Data</h3>
+                    <p>${error.message}</p>
+                `;
+            } finally {
+                $('loading-overlay').style.display = 'none';
+            }
+        }
+        
+        // Create a sample visualization graph
+        function createSampleGraph(mainAddress, transactions) {
+            const nodes = new Map();
+            const edges = [];
+            
+            // Add the main wallet node
+            nodes.set(mainAddress, {
+                id: mainAddress,
+                address: mainAddress,
+                label: shortenAddress(mainAddress),
+                type: 'wallet',
+                isMain: true,
+                transactionCount: transactions.length
+            });
+            
+            // Simulate connected wallets from transaction data
+            // For a real implementation, we would need to analyze the transactions to extract actual connections
+            
+            // Generate some random but reproducible connected wallets based on the main address
+            const connectedWallets = generateRandomWalletsForAddress(mainAddress, Math.min(15, transactions.length));
+            
+            // Add connected wallet nodes and create edges
+            for (let i = 0; i < connectedWallets.length; i++) {
+                const wallet = connectedWallets[i];
+                
+                // Add the wallet node if it doesn't exist
+                if (!nodes.has(wallet.address)) {
+                    nodes.set(wallet.address, {
+                        id: wallet.address,
+                        address: wallet.address,
+                        label: shortenAddress(wallet.address),
+                        type: wallet.type,
+                        transactionCount: wallet.transactionCount
+                    });
+                }
+                
+                // Create edges based on transactions (simplified)
+                const tx = transactions[i % transactions.length]; // Use real transaction IDs
+                
+                // Some connections are incoming, some are outgoing
+                const isOutgoing = i % 2 === 0;
+                
+                const edge = {
+                    id: `edge-${i}`,
+                    source: isOutgoing ? mainAddress : wallet.address,
+                    target: isOutgoing ? wallet.address : mainAddress,
+                    amount: Math.random() * 10, // Random amount for demo
+                    type: getRandomTransactionType(),
+                    signature: tx.signature,
+                    timestamp: new Date(tx.blockTime * 1000),
+                    isCritical: i < 3 // Mark first few as critical path for demo
+                };
+                
+                edges.push(edge);
+            }
+            
+            // Create the graph object
+            graph = {
+                nodes: Array.from(nodes.values()),
+                edges: edges
+            };
+            
+            return graph;
+        }
+        
+        // Render the graph visualization
+        function renderGraph() {
+            // Clear existing visualization
+            g.selectAll('*').remove();
+            
+            // Create arrow marker for directed edges
+            svg.select('defs').remove();
+            const defs = svg.append('defs');
+            
+            defs.append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 20)
+                .attr('refY', 0)
+                .attr('orient', 'auto')
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', '#94A3B8');
+            
+            // Create links (edges)
+            const links = g.append('g')
+                .attr('class', 'links')
+                .selectAll('line')
+                .data(graph.edges)
+                .enter()
+                .append('line')
+                .attr('class', d => `link link-${d.type} ${d.isCritical ? 'critical-path' : ''}`)
+                .attr('stroke', d => getEdgeColor(d))
+                .attr('marker-end', 'url(#arrowhead)')
+                .on('mouseover', function(event, d) {
+                    d3.select(this)
+                        .attr('stroke-opacity', 1)
+                        .attr('stroke-width', 2.5);
+                    
+                    showTooltip(event, `${d.type} transaction of ${d.amount.toFixed(2)} SOL<br>${formatDate(d.timestamp)}`);
+                })
+                .on('mouseout', function() {
+                    if (!selectedEdge || this.__data__.id !== selectedEdge.id) {
+                        d3.select(this)
+                            .attr('stroke-opacity', 0.6)
+                            .attr('stroke-width', 1.5);
+                    }
+                    hideTooltip();
+                })
+                .on('click', function(event, d) {
+                    event.stopPropagation();
+                    selectEdge(d, this);
+                });
+            
+            // Create nodes
+            const nodes = g.append('g')
+                .attr('class', 'nodes')
+                .selectAll('circle')
+                .data(graph.nodes)
+                .enter()
+                .append('circle')
+                .attr('class', 'node')
+                .attr('r', d => getNodeSize(d))
+                .attr('fill', d => getNodeColor(d))
+                .on('mouseover', function(event, d) {
+                    d3.select(this)
+                        .attr('stroke', '#9945FF')
+                        .attr('stroke-width', 2);
+                    
+                    showTooltip(event, `${d.label}<br>${d.type}<br>${d.transactionCount} transactions`);
+                })
+                .on('mouseout', function() {
+                    if (!selectedNode || this.__data__.id !== selectedNode.id) {
+                        d3.select(this)
+                            .attr('stroke', null)
+                            .attr('stroke-width', null);
+                    }
+                    hideTooltip();
+                })
+                .on('click', function(event, d) {
+                    event.stopPropagation();
+                    selectNode(d, this);
+                })
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            // Add labels to nodes
+            g.append('g')
+                .attr('class', 'labels')
+                .selectAll('text')
+                .data(graph.nodes)
+                .enter()
+                .append('text')
+                .attr('dy', d => getNodeSize(d) + 15)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '10px')
+                .attr('fill', '#94A3B8')
+                .text(d => d.label);
+            
+            // Update the simulation with the new data
+            simulation.nodes(graph.nodes);
+            simulation.force('link').links(graph.edges);
+            simulation.alpha(1).restart();
+            
+            // Listen for background clicks to deselect
+            svg.on('click', () => {
+                deselectAll();
+            });
+        }
+        
+        // Handle simulation tick (update positions)
+        function ticked() {
+            // Update link positions
+            g.selectAll('.link')
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+            
+            // Update node positions
+            g.selectAll('.node')
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y);
+            
+            // Update label positions
+            g.selectAll('text')
+                .attr('x', d => d.x)
+                .attr('y', d => d.y);
+        }
+        
+        // Handle node dragging
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+        
+        // Select a node
+        function selectNode(node, element) {
+            deselectAll();
+            
+            selectedNode = node;
+            
+            // Highlight the selected node
+            d3.select(element)
+                .attr('stroke', '#14F195')
+                .attr('stroke-width', 3)
+                .classed('selected-node', true);
+            
+            // Show node info in sidebar
+            const infoHTML = `
+                <div class="wallet-info">
+                    <h3>Wallet Details</h3>
+                    <div class="wallet-row">
+                        <span class="wallet-label">Address:</span>
+                        <span class="wallet-value">${shortenAddress(node.address)}</span>
+                    </div>
+                    <div class="wallet-row">
+                        <span class="wallet-label">Type:</span>
+                        <span class="wallet-value">${node.type}</span>
+                    </div>
+                    <div class="wallet-row">
+                        <span class="wallet-label">Transactions:</span>
+                        <span class="wallet-value">${node.transactionCount}</span>
+                    </div>
+                    ${node.isMain ? '<div class="wallet-row"><span class="wallet-label">Status:</span><span class="wallet-value">Main Wallet</span></div>' : ''}
+                </div>
+                <button class="button" style="width: 100%; margin-top: 1rem;" onclick="fetchWalletData('${node.address}')">
+                    Visualize This Wallet
+                </button>
+            `;
+            
+            $('selected-info').innerHTML = infoHTML;
+            
+            // Highlight connected edges
+            g.selectAll('.link')
+                .attr('stroke-opacity', d => 
+                    (d.source.id === node.id || d.target.id === node.id) ? 1 : 0.1
+                )
+                .attr('stroke-width', d => 
+                    (d.source.id === node.id || d.target.id === node.id) ? 2.5 : 1
+                );
+            
+            // Highlight connected nodes
+            g.selectAll('.node')
+                .attr('opacity', d => 
+                    isConnectedNode(d, node) ? 1 : 0.3
+                );
+            
+            g.selectAll('text')
+                .attr('opacity', d => 
+                    isConnectedNode(d, node) ? 1 : 0.3
+                );
+        }
+        
+        // Select an edge
+        function selectEdge(edge, element) {
+            deselectAll();
+            
+            selectedEdge = edge;
+            
+            // Highlight the selected edge
+            d3.select(element)
+                .attr('stroke-opacity', 1)
+                .attr('stroke-width', 3)
+                .classed('selected-edge', true);
+            
+            // Show edge info in sidebar
+            const infoHTML = `
+                <div class="transaction-info">
+                    <h3>Transaction Details</h3>
+                    <div class="wallet-row">
+                        <span class="wallet-label">Type:</span>
+                        <span class="wallet-value">${edge.type}</span>
+                    </div>
+                    <div class="wallet-row">
+                        <span class="wallet-label">Amount:</span>
+                        <span class="wallet-value">${edge.amount.toFixed(4)} SOL</span>
+                    </div>
+                    <div class="wallet-row">
+                        <span class="wallet-label">Date:</span>
+                        <span class="wallet-value">${formatDate(edge.timestamp)}</span>
+                    </div>
+                    <div class="wallet-row">
+                        <span class="wallet-label">From:</span>
+                        <span class="wallet-value">${shortenAddress(edge.source.id || edge.source)}</span>
+                    </div>
+                    <div class="wallet-row">
+                        <span class="wallet-label">To:</span>
+                        <span class="wallet-value">${shortenAddress(edge.target.id || edge.target)}</span>
+                    </div>
+                    <div class="wallet-row">
+                        <span class="wallet-label">Signature:</span>
+                        <span class="wallet-value">${shortenAddress(edge.signature, 6)}</span>
+                    </div>
+                    ${edge.isCritical ? '<div class="wallet-row"><span class="wallet-label">Critical Path:</span><span class="wallet-value">Yes</span></div>' : ''}
+                </div>
+                <button class="button" style="width: 100%; margin-top: 1rem;" onclick="window.open('https://explorer.solana.com/tx/${edge.signature}', '_blank')">
+                    View on Solana Explorer
+                </button>
+            `;
+            
+            $('selected-info').innerHTML = infoHTML;
+            
+            // Highlight only this edge and connected nodes
+            g.selectAll('.link')
+                .attr('stroke-opacity', d => d.id === edge.id ? 1 : 0.1)
+                .attr('stroke-width', d => d.id === edge.id ? 3 : 1);
+            
+            g.selectAll('.node')
+                .attr('opacity', d => 
+                    d.id === edge.source.id || d.id === edge.source || 
+                    d.id === edge.target.id || d.id === edge.target ? 1 : 0.3
+                );
+            
+            g.selectAll('text')
+                .attr('opacity', d => 
+                    d.id === edge.source.id || d.id === edge.source || 
+                    d.id === edge.target.id || d.id === edge.target ? 1 : 0.3
+                );
+        }
+        
+        // Deselect all nodes and edges
+        function deselectAll() {
+            selectedNode = null;
+            selectedEdge = null;
+            
+            g.selectAll('.node')
+                .attr('stroke', null)
+                .attr('stroke-width', null)
+                .attr('opacity', 1)
+                .classed('selected-node', false);
+            
+            g.selectAll('.link')
+                .attr('stroke-opacity', 0.6)
+                .attr('stroke-width', d => d.isCritical ? 3 : 1.5)
+                .classed('selected-edge', false);
+            
+            g.selectAll('text')
+                .attr('opacity', 1);
+            
+            $('selected-info').innerHTML = '';
+        }
+        
+        // Apply filters to the visualization
+        function applyFilters() {
+            log('Applying filters');
+            
+            // Get filter values
+            const startDate = $('start-date').valueAsDate;
+            const endDate = $('end-date').valueAsDate;
+            const minAmount = parseFloat($('min-amount').value) || 0;
+            const maxAmount = parseFloat($('max-amount').value) || Infinity;
+            
+            // Get selected transaction types
+            const selectedTypes = Array.from(document.querySelectorAll('#transaction-types input:checked'))
+                .map(input => input.value);
+            
+            // Should we highlight critical paths?
+            const highlightCritical = $('highlight-critical').checked;
+            
+            // Filter the edges
+            const filteredEdges = graph.edges.filter(edge => {
+                // Filter by date
+                const txDate = new Date(edge.timestamp);
+                const dateInRange = (!startDate || txDate >= startDate) && 
+                                   (!endDate || txDate <= endDate);
+                
+                // Filter by amount
+                const amountInRange = edge.amount >= minAmount && 
+                                     (isNaN(maxAmount) || edge.amount <= maxAmount);
+                
+                // Filter by type
+                const typeMatches = selectedTypes.includes(edge.type);
+                
+                return dateInRange && amountInRange && typeMatches;
+            });
+            
+            // Get all node IDs that have connections in the filtered edges
+            const connectedNodeIds = new Set();
+            filteredEdges.forEach(edge => {
+                connectedNodeIds.add(edge.source.id || edge.source);
+                connectedNodeIds.add(edge.target.id || edge.target);
+            });
+            
+            // Filter the nodes
+            const filteredNodes = graph.nodes.filter(node => 
+                connectedNodeIds.has(node.id)
+            );
+            
+            // Update critical path visibility
+            g.selectAll('.link')
+                .classed('critical-path', d => highlightCritical && d.isCritical);
+            
+            // Update the simulation with filtered data
+            simulation.nodes(filteredNodes);
+            simulation.force('link').links(filteredEdges);
+            simulation.alpha(1).restart();
+            
+            // Update visibility of nodes and links
+            g.selectAll('.node')
+                .attr('display', d => connectedNodeIds.has(d.id) ? 'inline' : 'none');
+            
+            g.selectAll('text')
+                .attr('display', d => connectedNodeIds.has(d.id) ? 'inline' : 'none');
+            
+            g.selectAll('.link')
+                .attr('display', d => {
+                    const sourceId = d.source.id || d.source;
+                    const targetId = d.target.id || d.target;
+                    return filteredEdges.some(e => 
+                        (e.source.id || e.source) === sourceId && 
+                        (e.target.id || e.target) === targetId
+                    ) ? 'inline' : 'none';
+                });
+            
+            // Update status
+            $('status-text').textContent = `Filtered to ${filteredNodes.length} nodes and ${filteredEdges.length} transactions`;
+            $('node-count').textContent = `Nodes: ${filteredNodes.length} | Edges: ${filteredEdges.length}`;
+        }
+        
+        // Reset all filters
+        function resetFilters() {
+            log('Resetting filters');
+            
+            // Reset date filters
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            $('start-date').valueAsDate = thirtyDaysAgo;
+            $('end-date').valueAsDate = today;
+            
+            // Reset amount filters
+            $('min-amount').value = '';
+            $('max-amount').value = '';
+            
+            // Reset transaction type filters
+            document.querySelectorAll('#transaction-types input').forEach(input => {
+                input.checked = true;
+            });
+            
+            // Reset display options
+            $('node-limit').value = 30;
+            $('layout-type').value = 'force';
+            $('highlight-critical').checked = true;
+            
+            // Apply the reset filters
+            applyFilters();
+            
+            // Restore all nodes and edges to visibility
+            g.selectAll('.node').attr('display', 'inline');
+            g.selectAll('text').attr('display', 'inline');
+            g.selectAll('.link').attr('display', 'inline').classed('critical-path', d => d.isCritical);
+            
+            // Update status
+            $('status-text').textContent = 'Filters reset';
+            $('node-count').textContent = `Nodes: ${graph.nodes.length} | Edges: ${graph.edges.length}`;
+        }
+        
+        // Zoom controls
+        function zoomIn() {
+            const transform = d3.zoomIdentity.scale(currentZoom * 1.2);
+            svg.transition().duration(300).call(d3.zoom().transform, transform);
+        }
+        
+        function zoomOut() {
+            const transform = d3.zoomIdentity.scale(currentZoom * 0.8);
+            svg.transition().duration(300).call(d3.zoom().transform, transform);
+        }
+        
+        function resetZoom() {
+            svg.transition().duration(300).call(d3.zoom().transform, d3.zoomIdentity);
+        }
+        
+        // Show tooltip
+        function showTooltip(event, html) {
+            tooltip.html(html)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 10) + 'px')
+                .transition()
+                .duration(200)
+                .style('opacity', 0.9);
+        }
+        
+        // Hide tooltip
+        function hideTooltip() {
+            tooltip.transition()
+                .duration(200)
+                .style('opacity', 0);
+        }
+        
+        // Helper function to check if a node is connected to another node
+        function isConnectedNode(node, targetNode) {
+            if (node.id === targetNode.id) return true;
+            
+            return graph.edges.some(edge => 
+                (edge.source.id === node.id && edge.target.id === targetNode.id) ||
+                (edge.source.id === targetNode.id && edge.target.id === node.id) ||
+                (edge.source === node.id && edge.target === targetNode.id) ||
+                (edge.source === targetNode.id && edge.target === node.id)
+            );
+        }
+        
+        // Helper function to get node color based on type and status
+        function getNodeColor(node) {
+            if (node.isMain) return '#14F195'; // Main wallet - green
+            
+            switch (node.type) {
+                case 'wallet': return '#9945FF'; // Purple
+                case 'program': return '#3694FF'; // Blue
+                case 'contract': return '#FF9900'; // Orange
+                default: return '#64748B'; // Gray
+            }
+        }
+        
+        // Helper function to get node size based on importance
+        function getNodeSize(node) {
+            if (node.isMain) return 10;
+            
+            const baseSize = 6;
+            const txFactor = Math.min(node.transactionCount / 5, 1.5);
+            
+            return baseSize * txFactor;
+        }
+        
+        // Helper function to get edge color based on type
+        function getEdgeColor(edge) {
+            if (edge.isCritical) return '#ff4500'; // Red-orange for critical paths
+            
+            switch (edge.type) {
+                case 'transfer': return '#9945FF'; // Purple
+                case 'swap': return '#3694FF'; // Blue
+                case 'nft': return '#FF9900'; // Orange
+                case 'defi': return '#14F195'; // Green
+                default: return '#64748B'; // Gray
+            }
+        }
+        
+        // Helper function to generate reproducible random wallets based on an address
+        function generateRandomWalletsForAddress(address, count) {
+            const wallets = [];
+            const types = ['wallet', 'program', 'contract'];
+            
+            // Use a simple hash of the address as a seed
+            const seed = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            
+            for (let i = 0; i < count; i++) {
+                // Generate a pseudorandom wallet address based on the seed and index
+                const randomAddress = generateRandomAddress(seed + i);
+                
+                wallets.push({
+                    address: randomAddress,
+                    type: types[i % types.length],
+                    transactionCount: Math.floor(Math.random() * 20) + 1
+                });
+            }
+            
+            return wallets;
+        }
+        
+        // Helper function to generate a random Solana-like address
+        function generateRandomAddress(seed) {
+            const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            let result = '';
+            
+            // Generate a 44-character string
+            for (let i = 0; i < 44; i++) {
+                const index = (seed + i) % chars.length;
+                result += chars.charAt(index);
+            }
+            
+            return result;
+        }
+        
+        // Helper function to get a random transaction type
+        function getRandomTransactionType() {
+            const types = ['transfer', 'swap', 'nft', 'defi', 'other'];
+            return types[Math.floor(Math.random() * types.length)];
+        }
+        
+        // Helper function to format a date
+        function formatDate(date) {
+            if (!date) return 'Unknown';
+            
+            const d = new Date(date);
+            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+        }
+        
+        // Helper function to shorten a wallet address
+        function shortenAddress(address, chars = 4) {
+            if (!address) return 'Unknown';
+            if (address.length <= chars * 2) return address;
+            
+            return `${address.substring(0, chars)}...${address.substring(address.length - chars)}`;
+        }
+        
+        // Helper function to validate a Solana address
+        function isValidSolanaAddress(address) {
+            // Basic validation - Solana addresses are base58 encoded and typically 32-44 chars
+            return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+        }
+        
+        // Helper function for logging
+        function log(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            
+            // Add to diagnostics log if we need to show it
+            const diagnostics = $('diagnostics');
+            
+            // Only show diagnostics in case of errors or if debug mode is enabled
+            if (type === 'error') {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                entry.style.color = type === 'error' ? '#F87171' : '#22D3EE';
+                
+                diagnostics.appendChild(entry);
+                diagnostics.style.display = 'block';
+                
+                // Auto-scroll to bottom
+                diagnostics.scrollTop = diagnostics.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>

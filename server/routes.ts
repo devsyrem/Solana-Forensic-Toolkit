@@ -538,6 +538,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Serve visualization page
+  app.get(["/visualization", "/visualization/:address"], (req, res) => {
+    const vizHtmlPath = path.resolve(process.cwd(), "static", "visualization.html");
+    
+    try {
+      if (fs.existsSync(vizHtmlPath)) {
+        console.log(`Serving visualization HTML from: ${vizHtmlPath} for path: ${req.path}`);
+        return res.sendFile(vizHtmlPath);
+      } else {
+        console.error(`Visualization HTML file not found at: ${vizHtmlPath}`);
+        return res.status(404).send("Visualization HTML file not found");
+      }
+    } catch (error) {
+      console.error("Error serving visualization file:", error);
+      return res.status(500).send("Error serving visualization HTML file");
+    }
+  });
+  
   // Add a direct root path for the static file as fallback
   app.get("/", (req, res, next) => {
     // Only serve static HTML if requested with query param ?static=true

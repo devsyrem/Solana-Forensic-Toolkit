@@ -180,6 +180,14 @@
                 <button id="lookup-wallet" class="button primary" style="border-radius: 0 0.375rem 0.375rem 0;">Lookup</button>
             </div>
             <div id="wallet-result"></div>
+            <div style="margin-top: 1rem; text-align: center;">
+                <a href="/visualization" style="color: #9945FF; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                    Go to Transaction Flow Visualization
+                </a>
+            </div>
         </div>
 
         <div class="diagnostic-card">
@@ -247,6 +255,21 @@
             if (wallet.owner) {
                 addWalletRow(walletInfo, 'Owner', shortenAddress(wallet.owner));
             }
+            
+            // Add visualization link
+            const vizContainer = document.createElement('div');
+            vizContainer.style.marginTop = '1rem';
+            vizContainer.style.textAlign = 'center';
+            
+            const vizLink = document.createElement('a');
+            vizLink.href = `/visualization?wallet=${wallet.address}`;
+            vizLink.className = 'button primary';
+            vizLink.style.display = 'inline-block';
+            vizLink.style.textDecoration = 'none';
+            vizLink.textContent = 'Visualize Transactions';
+            
+            vizContainer.appendChild(vizLink);
+            walletInfo.appendChild(vizContainer);
             
             walletResult.appendChild(walletInfo);
         }
