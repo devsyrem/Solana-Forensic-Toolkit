@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { shortenAddress, formatSolAmount, formatTimeAgo } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import { HelpCircle, ZoomIn, ZoomOut, Maximize, Download, Share2 } from "lucide-react";
+import { HelpCircle, ZoomIn, ZoomOut, Maximize, Download, Share2, Filter as FilterIcon } from "lucide-react";
 
 interface FlowVisualizationProps {
   graph: VisualizationGraph;
@@ -14,6 +14,7 @@ interface FlowVisualizationProps {
   onEdgeClick?: (edge: TransactionEdge) => void;
   selectedNode?: WalletNode | null;
   selectedEdge?: TransactionEdge | null;
+  filteredWalletAddress?: string | null;
 }
 
 export default function FlowVisualization({
@@ -21,7 +22,8 @@ export default function FlowVisualization({
   onNodeClick,
   onEdgeClick,
   selectedNode,
-  selectedEdge
+  selectedEdge,
+  filteredWalletAddress
 }: FlowVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<"force" | "radial" | "hierarchy">("force");
@@ -230,6 +232,20 @@ export default function FlowVisualization({
       {/* Visualization Canvas */}
       <div className="relative w-full h-[400px]" ref={containerRef}>
         {/* This div will be populated by D3.js visualization in the useVisualization hook */}
+        {filteredWalletAddress && (
+          <div className="absolute top-2 left-2 bg-solana-dark px-3 py-1 rounded-md flex items-center space-x-2 text-xs">
+            <FilterIcon className="h-3 w-3 text-solana-primary" />
+            <span className="text-white">Filtering by: {shortenAddress(filteredWalletAddress)}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-5 w-5 p-0 text-gray-400 hover:text-white" 
+              onClick={() => onNodeClick && onNodeClick({id: filteredWalletAddress, address: filteredWalletAddress, type: 'wallet'})}
+            >
+              ×
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Visualization Legend */}
@@ -282,11 +298,46 @@ export default function FlowVisualization({
             )}
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline" className="bg-solana-dark hover:bg-solana-dark-light text-gray-300 px-2 py-1 rounded text-[10px] flex-1">
-              Track
+            <Button 
+              variant={filteredWalletAddress === selectedNode.address ? "default" : "outline"}
+              className={filteredWalletAddress === selectedNode.address 
+                ? "bg-solana-primary text-white px-2 py-1 rounded text-[10px] flex-1 flex items-center justify-center space-x-1" 
+                : "bg-solana-dark hover:bg-solana-dark-light text-gray-300 px-2 py-1 rounded text-[10px] flex-1 flex items-center justify-center space-x-1"
+              }
+              onClick={() => {
+                if (selectedNode && onNodeClick) {
+                  // Toggle filtering to only show interactions with this wallet
+                  import("@/lib/utils").then(({ filterTransactionsByWallet }) => {
+                    // This will be handled by the parent component through the onNodeClick callback
+                    onNodeClick(selectedNode);
+                  });
+                }
+              }}
+            >
+              {filteredWalletAddress === selectedNode.address ? (
+                <>
+                  <FilterIcon className="h-3 w-3" />
+                  <span>Clear Filter</span>
+                </>
+              ) : (
+                <>
+                  <FilterIcon className="h-3 w-3" />
+                  <span>Filter By Node</span>
+                </>
+              )}
             </Button>
-            <Button className="bg-solana-primary text-white px-2 py-1 rounded text-[10px] flex-1">
-              View Details
+            <Button 
+              className="bg-solana-primary text-white px-2 py-1 rounded text-[10px] flex-1"
+              onClick={() => {
+                if (selectedNode) {
+                  // Use the openInSolscan utility to open the address in Solscan
+                  import("@/lib/utils").then(({ openInSolscan }) => {
+                    openInSolscan(selectedNode.address);
+                  });
+                }
+              }}
+            >
+              View in Solscan
             </Button>
           </div>
         </div>

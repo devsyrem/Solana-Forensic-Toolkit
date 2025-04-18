@@ -107,3 +107,47 @@ export const tailwindStyles = {
     default: "bg-solana-dark border border-solana-dark-lighter rounded-md py-2 px-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-solana-primary focus:border-solana-primary",
   },
 };
+
+/**
+ * Generate a Solscan URL for a Solana address (wallet or transaction)
+ * @param address Solana wallet address or transaction signature
+ * @param type Type of entity ('address' for wallet or 'tx' for transaction)
+ * @returns URL to the Solscan page
+ */
+export function getSolscanUrl(address: string, type: 'address' | 'tx' = 'address'): string {
+  return `https://solscan.io/${type}/${address}`;
+}
+
+/**
+ * Opens the Solscan page for a Solana address in a new tab
+ * @param address Solana wallet address or transaction signature
+ * @param type Type of entity ('address' for wallet or 'tx' for transaction)
+ */
+export function openInSolscan(address: string, type: 'address' | 'tx' = 'address'): void {
+  const url = getSolscanUrl(address, type);
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/**
+ * Filter transactions to only show interactions with a specific wallet
+ * @param transactions List of transactions
+ * @param walletAddress Wallet address to filter by
+ * @returns Filtered list of transactions
+ */
+export function filterTransactionsByWallet(transactions: any[], walletAddress: string): any[] {
+  if (!transactions || !walletAddress) return [];
+  
+  return transactions.filter(tx => {
+    // Check if the transaction involves the specified wallet
+    if (tx.fromAddress === walletAddress || tx.toAddress === walletAddress) {
+      return true;
+    }
+    
+    // For transactions with multiple accounts, check if the wallet is involved
+    if (tx.accounts && Array.isArray(tx.accounts)) {
+      return tx.accounts.includes(walletAddress);
+    }
+    
+    return false;
+  });
+}

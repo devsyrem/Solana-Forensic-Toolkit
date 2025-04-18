@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useWallet } from "@/hooks/useWallet";
 import { useSolanaData } from "@/hooks/useSolanaData";
-import { WalletNode, TransactionEdge, VisualizationFilters } from "@/types/solana";
+import { WalletNode, TransactionEdge, VisualizationFilters, TransactionType } from "@/types/solana";
 import FilterSidebar from "@/components/visualization/FilterSidebar";
 import FlowVisualization from "@/components/visualization/FlowVisualization";
 import TransactionTimeline from "@/components/visualization/TransactionTimeline";
@@ -21,13 +21,15 @@ export default function Visualization() {
   const [address, setAddress] = useState(walletAddress || "");
   const [selectedNode, setSelectedNode] = useState<WalletNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<TransactionEdge | null>(null);
-  const [filters, setFilters] = useState<VisualizationFilters>({
+  const [showOnlyInteractionsWithWallet, setShowOnlyInteractionsWithWallet] = useState<string | null>(null);
+  const initialFilters: VisualizationFilters = {
     dateRange: { startDate: null, endDate: null },
     amountRange: { minAmount: 0.05, maxAmount: 100 },
-    transactionTypes: ["transfer", "swap", "nft"],
+    transactionTypes: ["transfer", "swap", "nft"] as Array<"transfer" | "swap" | "nft" | "defi" | "other">,
     programs: ["tokenProgram", "serum", "metaplex"]
-  });
-  const [appliedFilters, setAppliedFilters] = useState<VisualizationFilters>(filters);
+  };
+  const [filters, setFilters] = useState<VisualizationFilters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<VisualizationFilters>(initialFilters);
 
   // Get wallet data
   const { 
@@ -48,6 +50,7 @@ export default function Visualization() {
     error: dataError
   } = useSolanaData({ 
     address, 
+    filterWalletAddress: showOnlyInteractionsWithWallet,
     filters: appliedFilters 
   });
 
@@ -84,10 +87,10 @@ export default function Visualization() {
   };
 
   const handleFilterReset = () => {
-    const resetFilters = {
+    const resetFilters: VisualizationFilters = {
       dateRange: { startDate: null, endDate: null },
       amountRange: { minAmount: 0.05, maxAmount: 100 },
-      transactionTypes: ["transfer", "swap", "nft"],
+      transactionTypes: ["transfer", "swap", "nft"] as Array<"transfer" | "swap" | "nft" | "defi" | "other">,
       programs: ["tokenProgram", "serum", "metaplex"]
     };
     setFilters(resetFilters);
@@ -96,10 +99,27 @@ export default function Visualization() {
 
   const handleNodeClick = (node: WalletNode) => {
     setSelectedNode(node);
+    
+    // Toggle filtering to only show interactions with this wallet
+    toggleWalletFiltering(node.address);
+    
+    // When clicking on a node, a user can open it in Solscan.io (handled in FlowVisualization)
+    // The View in Solscan button is already implemented in FlowVisualization
   };
 
   const handleEdgeClick = (edge: TransactionEdge) => {
     setSelectedEdge(edge);
+  };
+  
+  // Toggle filtering to only show interactions with a specific wallet
+  const toggleWalletFiltering = (walletAddress: string | null) => {
+    if (showOnlyInteractionsWithWallet === walletAddress) {
+      // If already filtering by this wallet, clear the filter
+      setShowOnlyInteractionsWithWallet(null);
+    } else {
+      // Otherwise, set the filter to show only interactions with this wallet
+      setShowOnlyInteractionsWithWallet(walletAddress);
+    }
   };
 
   const handleTutorialStart = () => {
@@ -175,6 +195,7 @@ export default function Visualization() {
                     onEdgeClick={handleEdgeClick} 
                     selectedNode={selectedNode}
                     selectedEdge={selectedEdge}
+                    filteredWalletAddress={showOnlyInteractionsWithWallet}
                   />
                 )}
               </div>

@@ -13,6 +13,11 @@ import WebSocket from "ws";
 import path from "path";
 import fs from "fs";
 
+// Import wallet analysis, transaction clustering, and entity labeling routes
+import walletAnalysisRoutes from './routes/walletAnalysis';
+import transactionClusteringRoutes from './routes/transactionClustering';
+import entityLabelingRoutes from './routes/entityLabeling';
+
 const SessionStore = MemoryStore(session);
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -575,6 +580,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Otherwise continue to next handler (likely Vite)
     next();
   });
+
+  // Register wallet analysis routes
+  app.use('/api/wallet-analysis', walletAnalysisRoutes);
+  
+  // Register transaction clustering routes
+  app.use('/api/transaction-clustering', transactionClusteringRoutes);
+  
+  // Register entity labeling routes
+  app.use('/api/entity-labeling', entityLabelingRoutes);
 
   return httpServer;
 }

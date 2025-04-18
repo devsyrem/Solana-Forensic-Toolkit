@@ -15,6 +15,7 @@ import {
 interface UseSolanaDataProps {
   address?: string;
   transactionLimit?: number;
+  filterWalletAddress?: string | null;
   filters?: {
     startDate?: Date;
     endDate?: Date;
@@ -38,6 +39,7 @@ interface UseSolanaDataResult {
 export function useSolanaData({
   address = "",
   transactionLimit = 50,
+  filterWalletAddress = null,
   filters = {}
 }: UseSolanaDataProps = {}): UseSolanaDataResult {
   const [graph, setGraph] = useState<VisualizationGraph>({ nodes: [], edges: [] });
@@ -48,30 +50,30 @@ export function useSolanaData({
 
   // Query for account info
   const {
-    data: wallet,
+    data: wallet = { balance: 0 },
     isLoading: isLoadingWallet,
     error: walletError,
-  } = useQuery({
+  } = useQuery<{ balance: number }>({
     queryKey: [`/api/solana/account/${address}`],
     enabled: !!address,
   });
 
   // Query for transactions
   const {
-    data: transactions,
+    data: transactions = [],
     isLoading: isLoadingTransactions,
     error: transactionsError,
-  } = useQuery({
+  } = useQuery<any[]>({
     queryKey: [`/api/solana/transactions/${address}?limit=${transactionLimit}`],
     enabled: !!address,
   });
 
   // Fetch transaction details when we have transaction signatures
   const {
-    data: transactionDetails,
+    data: transactionDetails = [],
     isLoading: isLoadingDetails,
     error: detailsError,
-  } = useQuery({
+  } = useQuery<any[]>({
     queryKey: [`/api/solana/transactions/details/${address}`],
     enabled: !!transactions && transactions.length > 0,
     queryFn: async () => {
@@ -310,13 +312,38 @@ export function useSolanaData({
     
     setEntityClusters(clusters);
     
-    // Update graph with nodes and edges
+    // Filter nodes and edges if filterWalletAddress is provided
+    let filteredNodes = Array.from(nodes.values());
+    let filteredEdges = edges;
+    
+    if (filterWalletAddress) {
+      // Only show nodes that are either the main wallet, the filtered wallet, or connected to the filtered wallet
+      filteredEdges = edges.filter(edge => 
+        edge.source === filterWalletAddress || edge.target === filterWalletAddress
+      );
+      
+      // Get all addresses that are directly connected to the filtered wallet
+      const connectedAddresses = new Set<string>();
+      connectedAddresses.add(mainAddress); // Always include main wallet
+      connectedAddresses.add(filterWalletAddress); // Always include the filtered wallet
+      
+      // Add all addresses that have a direct connection with the filtered wallet
+      filteredEdges.forEach(edge => {
+        connectedAddresses.add(edge.source);
+        connectedAddresses.add(edge.target);
+      });
+      
+      // Filter nodes to only include those that are connected to the filtered wallet
+      filteredNodes = filteredNodes.filter(node => connectedAddresses.has(node.address));
+    }
+    
+    // Update graph with filtered nodes and edges
     setGraph({
-      nodes: Array.from(nodes.values()),
-      edges
+      nodes: filteredNodes,
+      edges: filteredEdges
     });
     
-  }, [address, wallet, transactionDetails, filters]);
+  }, [address, wallet, transactionDetails, filters, filterWalletAddress]);
 
   return {
     graph,

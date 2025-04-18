@@ -10,6 +10,18 @@ import { useSolanaData } from "@/hooks/useSolanaData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Wallet, BarChart2, Activity, TrendingUp } from "lucide-react";
 
+// Import wallet analysis components
+import FundingSourcesView from "@/components/wallet-analysis/FundingSourcesView";
+import ActivityPatternsView from "@/components/wallet-analysis/ActivityPatternsView";
+import EntityConnectionsView from "@/components/wallet-analysis/EntityConnectionsView";
+import FundOriginsView from "@/components/wallet-analysis/FundOriginsView";
+
+// Import transaction clustering components
+import TransactionClusteringPanel from "@/components/transaction-clustering/TransactionClusteringPanel";
+
+// Import entity labeling components
+import EntityLabelingPanel from "@/components/entity-labeling/EntityLabelingPanel";
+
 const DEFAULT_ADDRESS = "";
 
 export default function Analytics() {
@@ -235,7 +247,58 @@ export default function Analytics() {
             </TabsContent>
 
             <TabsContent value="relationships" className="space-y-6">
-              {/* Relationship Analysis */}
+              {/* Wallet Analysis */}
+              <Card className="bg-solana-dark-light border-solana-dark-lighter">
+                <CardHeader>
+                  <CardTitle className="text-white">Wallet Analysis</CardTitle>
+                  <CardDescription className="text-gray-400">Advanced analysis of funding sources, activity patterns, and entity connections</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 overflow-hidden">
+                  <div className="p-4 bg-solana-dark border-b border-solana-dark-lighter">
+                    <Tabs defaultValue="funding-sources">
+                      <TabsList className="bg-solana-dark-lighter">
+                        <TabsTrigger value="funding-sources">Funding Sources</TabsTrigger>
+                        <TabsTrigger value="activity-patterns">Activity Patterns</TabsTrigger>
+                        <TabsTrigger value="entity-connections">Entity Connections</TabsTrigger>
+                        <TabsTrigger value="fund-origins">Fund Origins</TabsTrigger>
+                      </TabsList>
+                      
+                      <div className="mt-4">
+                        <TabsContent value="funding-sources">
+                          <div className="py-1">
+                            {address && <FundingSourcesView address={address} />}
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="activity-patterns">
+                          <div className="py-1">
+                            {address && <ActivityPatternsView address={address} />}
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="entity-connections">
+                          <div className="py-1">
+                            {address && <EntityConnectionsView address={address} />}
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="fund-origins">
+                          <div className="py-1">
+                            {address && <FundOriginsView address={address} />}
+                          </div>
+                        </TabsContent>
+                      </div>
+                    </Tabs>
+                  </div>
+                </CardContent>
+              </Card>
+              {/* Transaction Clustering component */}
+              {address && <TransactionClusteringPanel address={address} />}
+              
+              {/* Entity Labeling component */}
+              {address && <EntityLabelingPanel address={address} />}
+              
+              {/* Network Analysis - Original content kept as a third card */}
               <Card className="bg-solana-dark-light border-solana-dark-lighter">
                 <CardHeader>
                   <CardTitle className="text-white">Network Analysis</CardTitle>
