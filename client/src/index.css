@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+:root {
+  --background: 222.2 47.4% 11.2%;
+  --foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --popover: 222.2 47.4% 11.2%;
+  --popover-foreground: 210 40% 98%;
+  --card: 222.2 47.4% 11.2%;
+  --card-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --primary: 267 100% 64%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 143 89% 51%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 60.6%;
+  --destructive-foreground: 210 40% 98%;
+  --ring: 217.2 32.6% 17.5%;
+  --radius: 0.5rem;
+  
+  /* Solana colors */
+  --solana-primary: 267 100% 64%; /* #9945FF */
+  --solana-secondary: 143 89% 51%; /* #14F195 */
+  --solana-dark: 240 19% 15%; /* #1E1E2E */
+  --solana-dark-light: 240 16% 20%; /* #292A3B */
+  --solana-dark-lighter: 239 21% 29%; /* #383A59 */
+  --solana-light: 210 33% 96%; /* #F1F3F5 */
+  --solana-error: 0 100% 66%; /* #FF5353 */
+  --solana-warning: 42 100% 50%; /* #FFB800 */
+  --solana-info: 196 100% 50%; /* #00C2FF */
+}
+
+.bg-solana-dark {
+  background-color: hsl(var(--solana-dark));
+}
+
+.bg-solana-dark-light {
+  background-color: hsl(var(--solana-dark-light));
+}
+
+.bg-solana-dark-lighter {
+  background-color: hsl(var(--solana-dark-lighter));
+}
+
+.bg-solana-primary {
+  background-color: hsl(var(--solana-primary));
+}
+
+.bg-solana-secondary {
+  background-color: hsl(var(--solana-secondary));
+}
+
+.text-solana-primary {
+  color: hsl(var(--solana-primary));
+}
+
+.text-solana-secondary {
+  color: hsl(var(--solana-secondary));
+}
+
+.text-solana-error {
+  color: hsl(var(--solana-error));
+}
+
+.text-solana-warning {
+  color: hsl(var(--solana-warning));
+}
+
+.text-solana-info {
+  color: hsl(var(--solana-info));
+}
+
+.border-solana-dark-light {
+  border-color: hsl(var(--solana-dark-light));
+}
+
+.border-solana-dark-lighter {
+  border-color: hsl(var(--solana-dark-lighter));
+}
+
+.border-solana-primary {
+  border-color: hsl(var(--solana-primary));
+}
+
+.hover\:bg-solana-dark-light:hover {
+  background-color: hsl(var(--solana-dark-light));
+}
+
+.hover\:bg-solana-dark-lighter:hover {
+  background-color: hsl(var(--solana-dark-lighter));
+}
+
+.focus\:ring-solana-primary:focus {
+  --tw-ring-color: hsl(var(--solana-primary));
+}
+
+.focus\:border-solana-primary:focus {
+  border-color: hsl(var(--solana-primary));
+}

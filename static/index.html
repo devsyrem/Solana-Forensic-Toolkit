@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolFlow - Solana Transaction Visualizer</title>
+    <style>
+        body {
+            background-color: #0F172A;
+            color: #F8FAFC;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #14F195, #9945FF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        .description {
+            font-size: 1.25rem;
+            color: #94A3B8;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+        .search-container {
+            background-color: #1E293B;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .search-form {
+            display: flex;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #334155;
+            border-radius: 0.375rem 0 0 0.375rem;
+            background-color: #0F172A;
+            color: #F8FAFC;
+        }
+        .search-button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            background-color: #9945FF;
+            color: white;
+            border: none;
+            border-radius: 0 0.375rem 0.375rem 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .search-button:hover {
+            background-color: #8035e0;
+        }
+        .error-message {
+            color: #EF4444;
+            margin-top: 0.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.125rem;
+            color: #94A3B8;
+        }
+        .wallet-info {
+            background-color: #1E293B;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .wallet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #334155;
+        }
+        .wallet-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .wallet-link {
+            padding: 0.5rem 1rem;
+            background-color: #14F195;
+            color: #0F172A;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        .wallet-link:hover {
+            background-color: #0ecc7d;
+        }
+        .wallet-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+        .wallet-label {
+            color: #94A3B8;
+        }
+        .wallet-value {
+            font-family: monospace;
+            font-weight: 500;
+        }
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .status-indicator.connected {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: #4ADE80;
+        }
+        .status-indicator.disconnected {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .status-dot.connected {
+            background-color: #4ADE80;
+        }
+        .status-dot.disconnected {
+            background-color: #F87171;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+        .feature-card {
+            background-color: #1E293B;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 9999px;
+            background-color: rgba(153, 69, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+            color: #9945FF;
+        }
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+        .feature-description {
+            color: #94A3B8;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SolFlow: Solana Transaction Visualizer</h1>
+            <p class="description">
+                Explore, analyze, and understand transaction patterns on the Solana blockchain
+                with our interactive visualization tools. No technical knowledge required.
+            </p>
+            <div class="status-indicator" id="connection-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking connection...</span>
+            </div>
+        </header>
+
+        <div class="search-container">
+            <div class="search-form">
+                <input type="text" id="wallet-address" class="search-input" placeholder="Enter a Solana wallet address" />
+                <button id="search-button" class="search-button">Search</button>
+            </div>
+            <div class="error-message" id="error-message"></div>
+        </div>
+
+        <div id="results-container"></div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                </div>
+                <h3 class="feature-title">Interactive Flow Charts</h3>
+                <p class="feature-description">
+                    Visualize connections between wallets with interactive diagrams that make transaction flows easy to understand.
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                </div>
+                <h3 class="feature-title">Advanced Filtering</h3>
+                <p class="feature-description">
+                    Filter transactions by date, amount, and type to focus on the data that matters most to your analysis.
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+                <h3 class="feature-title">Save & Share</h3>
+                <p class="feature-description">
+                    Save your visualization snapshots and share them with others for collaborative analysis.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const connectionStatus = document.getElementById('connection-status');
+            const statusDot = connectionStatus.querySelector('.status-dot');
+            const statusText = connectionStatus.querySelector('.status-text');
+            const walletAddressInput = document.getElementById('wallet-address');
+            const searchButton = document.getElementById('search-button');
+            const errorMessage = document.getElementById('error-message');
+            const resultsContainer = document.getElementById('results-container');
+
+            // Log page load for debugging
+            console.log('Static SolFlow page loaded at: ' + new Date().toISOString());
+
+            // Add diagnostics section
+            const diagnosticsDiv = document.createElement('div');
+            diagnosticsDiv.style.marginTop = '20px';
+            diagnosticsDiv.style.padding = '15px';
+            diagnosticsDiv.style.background = '#1a1a2e';
+            diagnosticsDiv.style.borderRadius = '8px';
+            diagnosticsDiv.style.fontFamily = 'monospace';
+            diagnosticsDiv.style.fontSize = '12px';
+            diagnosticsDiv.style.display = 'none';
+            
+            resultsContainer.appendChild(diagnosticsDiv);
+
+            // Function to update diagnostics info
+            function updateDiagnostics(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#74c0fc';
+                
+                diagnosticsDiv.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+                diagnosticsDiv.style.display = 'block';
+                
+                // Auto-scroll to bottom
+                diagnosticsDiv.scrollTop = diagnosticsDiv.scrollHeight;
+            }
+
+            // Check server connection
+            checkServerConnection();
+
+            // Add event listener to search button
+            searchButton.addEventListener('click', () => {
+                searchWallet();
+            });
+
+            // Add event listener for Enter key
+            walletAddressInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchWallet();
+                }
+            });
+
+            // Function to check server connection
+            async function checkServerConnection() {
+                updateDiagnostics('Checking server connection...');
+                
+                // First try the health endpoint
+                try {
+                    const healthResponse = await fetch('/api/health');
+                    if (healthResponse.ok) {
+                        const healthData = await healthResponse.json();
+                        updateDiagnostics(`Health check successful: ${JSON.stringify(healthData)}`, 'success');
+                        
+                        connectionStatus.className = 'status-indicator connected';
+                        statusDot.className = 'status-dot connected';
+                        statusText.textContent = 'Connected to server';
+                        
+                        // Use a well-known Solana address for testing
+                        updateDiagnostics('Testing Solana API connection...');
+                        try {
+                            const solanaResponse = await fetch('/api/solana/account/FdNxEcv4LyffZz9A5CJk1roVT8MNK1qzXq7NANbmAn9h');
+                            if (solanaResponse.ok) {
+                                updateDiagnostics('Solana API connection successful!', 'success');
+                            } else {
+                                updateDiagnostics(`Solana API returned status: ${solanaResponse.status}`, 'error');
+                            }
+                        } catch (solanaError) {
+                            updateDiagnostics(`Solana API error: ${solanaError.message}`, 'error');
+                        }
+                        
+                        return;
+                    }
+                } catch (healthError) {
+                    updateDiagnostics(`Health endpoint error: ${healthError.message}`, 'error');
+                }
+                
+                // If health check fails, try direct Solana API
+                try {
+                    updateDiagnostics('Trying direct Solana API call...');
+                    const response = await fetch('/api/solana/account/FdNxEcv4LyffZz9A5CJk1roVT8MNK1qzXq7NANbmAn9h');
+                    
+                    if (response.ok) {
+                        connectionStatus.className = 'status-indicator connected';
+                        statusDot.className = 'status-dot connected';
+                        statusText.textContent = 'Connected to server';
+                        updateDiagnostics('Direct Solana API call successful!', 'success');
+                    } else {
+                        connectionStatus.className = 'status-indicator disconnected';
+                        statusDot.className = 'status-dot disconnected';
+                        statusText.textContent = `Server error: ${response.status}`;
+                        updateDiagnostics(`Direct Solana API error: ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    connectionStatus.className = 'status-indicator disconnected';
+                    statusDot.className = 'status-dot disconnected';
+                    statusText.textContent = `Connection error: ${error.message}`;
+                    updateDiagnostics(`Connection error: ${error.message}`, 'error');
+                    
+                    // Add extra diagnostics for network issues
+                    updateDiagnostics('Checking if this is a Replit environment issue...');
+                    updateDiagnostics('Note: WebSocket errors in Replit can cause connectivity issues');
+                    updateDiagnostics('Try accessing the app through the Replit webview directly');
+                }
+            }
+
+            // Function to validate Solana address (basic validation)
+            function isValidSolanaAddress(address) {
+                return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+            }
+
+            // Function to search for a wallet
+            async function searchWallet() {
+                const address = walletAddressInput.value.trim();
+                updateDiagnostics(`Searching for wallet: ${address}`);
+                
+                // Clear previous error message
+                errorMessage.textContent = '';
+                
+                // Validate wallet address
+                if (!address) {
+                    errorMessage.textContent = 'Please enter a wallet address';
+                    updateDiagnostics('Error: No wallet address provided', 'error');
+                    return;
+                }
+                
+                if (!isValidSolanaAddress(address)) {
+                    errorMessage.textContent = 'Please enter a valid Solana wallet address';
+                    updateDiagnostics('Error: Invalid Solana address format', 'error');
+                    return;
+                }
+                
+                // Show loading state
+                const loadingElement = document.createElement('div');
+                loadingElement.className = 'loading';
+                loadingElement.textContent = 'Loading wallet information...';
+                resultsContainer.prepend(loadingElement);
+                
+                try {
+                    updateDiagnostics(`Fetching wallet data from: /api/solana/account/${address}`);
+                    // Fetch wallet data
+                    const response = await fetch(`/api/solana/account/${address}`);
+                    
+                    updateDiagnostics(`Received response: status ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`Error: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const walletData = await response.json();
+                    updateDiagnostics(`Wallet data retrieved successfully`, 'success');
+                    
+                    // Display wallet info
+                    displayWalletInfo(walletData);
+                } catch (error) {
+                    loadingElement.remove();
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    errorDiv.textContent = `Failed to fetch wallet information: ${error.message}`;
+                    resultsContainer.prepend(errorDiv);
+                    
+                    updateDiagnostics(`Error fetching wallet: ${error.message}`, 'error');
+                }
+            }
+
+            // Function to display wallet info
+            function displayWalletInfo(walletData) {
+                // Remove loading indicator
+                const loadingElement = resultsContainer.querySelector('.loading');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+                
+                // Create wallet info container
+                const walletInfoElement = document.createElement('div');
+                walletInfoElement.className = 'wallet-info';
+                
+                // Create header
+                const walletHeader = document.createElement('div');
+                walletHeader.className = 'wallet-header';
+                
+                const walletTitle = document.createElement('h3');
+                walletTitle.className = 'wallet-title';
+                walletTitle.textContent = 'Wallet Information';
+                walletHeader.appendChild(walletTitle);
+                
+                const walletLink = document.createElement('a');
+                walletLink.className = 'wallet-link';
+                walletLink.href = `/visualization/${walletData.address}`;
+                walletLink.textContent = 'Visualize Transactions';
+                walletHeader.appendChild(walletLink);
+                
+                walletInfoElement.appendChild(walletHeader);
+                
+                // Add wallet details
+                addWalletRow(walletInfoElement, 'Address:', shortenAddress(walletData.address));
+                addWalletRow(walletInfoElement, 'Balance:', `${walletData.balance.toFixed(4)} SOL`);
+                addWalletRow(walletInfoElement, 'Executable:', walletData.executable ? 'Yes' : 'No');
+                
+                if (walletData.owner) {
+                    addWalletRow(walletInfoElement, 'Owner:', shortenAddress(walletData.owner));
+                }
+                
+                // Add to results container
+                resultsContainer.prepend(walletInfoElement);
+                
+                updateDiagnostics(`Displayed wallet info for ${walletData.address}`, 'success');
+            }
+            
+            // Helper to add a row to wallet info
+            function addWalletRow(container, label, value) {
+                const row = document.createElement('div');
+                row.className = 'wallet-row';
+                
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'wallet-label';
+                labelSpan.textContent = label;
+                row.appendChild(labelSpan);
+                
+                const valueSpan = document.createElement('span');
+                valueSpan.className = 'wallet-value';
+                valueSpan.textContent = value;
+                row.appendChild(valueSpan);
+                
+                container.appendChild(row);
+            }
+
+            // Helper function to shorten wallet address
+            function shortenAddress(address, chars = 4) {
+                return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+            }
+        });
+    </script>
+</body>
+</html>
