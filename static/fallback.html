@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solana Transaction Flow Visualization</title>
+  <style>
+    :root {
+      --primary: #9945FF;
+      --secondary: #14F195;
+      --dark: #1E1E2E;
+      --dark-light: #292A3B;
+      --dark-lighter: #383A59;
+      --light: #F1F3F5;
+      --error: #FF5353;
+      --warning: #FFB800;
+      --info: #00C2FF;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    
+    body {
+      background-color: var(--dark);
+      color: var(--light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    header {
+      padding: 1.5rem;
+      background-color: var(--dark-light);
+      border-bottom: 1px solid var(--dark-lighter);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      flex: 1;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--light);
+    }
+    
+    p {
+      margin-bottom: 1rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .card {
+      background-color: var(--dark-light);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--dark-lighter);
+    }
+    
+    .card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--light);
+    }
+    
+    .button {
+      padding: 0.75rem 1.5rem;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 1rem;
+    }
+    
+    .button:hover {
+      background-color: #8030e0;
+    }
+    
+    .button-secondary {
+      background-color: var(--dark-lighter);
+    }
+    
+    .button-secondary:hover {
+      background-color: #454766;
+    }
+    
+    .flex {
+      display: flex;
+    }
+    
+    .items-center {
+      align-items: center;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+      background-color: rgba(153, 69, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+      color: var(--primary);
+    }
+    
+    footer {
+      padding: 1.5rem;
+      background-color: var(--dark-light);
+      border-top: 1px solid var(--dark-lighter);
+      text-align: center;
+    }
+    
+    .error-container {
+      background-color: rgba(255, 83, 83, 0.1);
+      border: 1px solid var(--error);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+    
+    .info-container {
+      background-color: rgba(0, 194, 255, 0.1);
+      border: 1px solid var(--info);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Solana Transaction Flow Visualization</h1>
+    <p>Analyze transaction patterns and relationships on the Solana blockchain</p>
+  </header>
+  
+  <div class="container">
+    <div class="error-container">
+      <h3>Application Connection Issue</h3>
+      <p>The application is experiencing connectivity issues. This is a common issue in development environments with WebSocket connections.</p>
+      <p>Please try one of the following:</p>
+      <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+        <li>Refresh the page</li>
+        <li>Try again in a few minutes</li>
+        <li>Use the direct HTML version below</li>
+      </ul>
+    </div>
+
+    <div class="info-container">
+      <h3>Direct HTML Version Available</h3>
+      <p>You can access a simplified HTML version of the application while we resolve the connectivity issues.</p>
+      <a href="/direct.html" class="button">Access Direct HTML Version</a>
+    </div>
+    
+    <h2>Key Features</h2>
+    
+    <div class="grid">
+      <div class="card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+        </div>
+        <h3>Transaction Flow Visualization</h3>
+        <p>Interactive flowcharts showing transaction paths between wallets, protocols, and other entities on the Solana blockchain.</p>
+      </div>
+      
+      <div class="card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+        </div>
+        <h3>Wallet Analysis</h3>
+        <p>Detailed analysis of wallet activity, funding sources, and connection patterns to identify relationships and behaviors.</p>
+      </div>
+      
+      <div class="card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+          </svg>
+        </div>
+        <h3>Entity Labeling</h3>
+        <p>Identification of known exchanges, DEXs, projects, and other entities to provide context for transaction flows.</p>
+      </div>
+      
+      <div class="card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3>Transaction Timeline</h3>
+        <p>Chronological view of transaction activity with filtering capabilities by date, volume, and transaction type.</p>
+      </div>
+      
+      <div class="card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <h3>Transaction Clustering</h3>
+        <p>Identification of related transactions and unusual transaction patterns for deeper analysis.</p>
+      </div>
+      
+      <div class="card">
+        <div class="feature-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+          </svg>
+        </div>
+        <h3>Critical Path Highlighting</h3>
+        <p>Automated detection of critical transaction paths between wallets based on volume, frequency, and other factors.</p>
+      </div>
+    </div>
+  </div>
+  
+  <footer>
+    <p>&copy; 2025 Solana Transaction Flow Visualization. All rights reserved.</p>
+  </footer>
+</body>
+</html>

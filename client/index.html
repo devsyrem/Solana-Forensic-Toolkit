@@ -3,6 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <script>
+      // WebSocket connection detection
+      let wsConnectionFailed = false;
+      let wsConnectionAttempts = 0;
+      const MAX_WS_ATTEMPTS = 3;
+      
+      // Check if we should redirect to fallback page
+      function checkRedirectToFallback() {
+        if (wsConnectionFailed || wsConnectionAttempts >= MAX_WS_ATTEMPTS) {
+          console.log('WebSocket connection failed, redirecting to fallback page');
+          window.location.href = '/fallback';
+        }
+      }
+      
+      // Monkey patch WebSocket to detect connection issues
+      const OriginalWebSocket = window.WebSocket;
+      window.WebSocket = function(url, protocols) {
+        console.log('Creating WebSocket connection to:', url);
+        wsConnectionAttempts++;
+        
+        const ws = new OriginalWebSocket(url, protocols);
+        
+        ws.addEventListener('error', (event) => {
+          console.error('WebSocket connection error');
+          wsConnectionFailed = true;
+          setTimeout(checkRedirectToFallback, 1000);
+        });
+        
+        return ws;
+      };
+      
+      // Set a timeout to check WebSocket connection
+      setTimeout(checkRedirectToFallback, 10000);
+    </script>
   </head>
   <body>
     <div id="root"></div>
