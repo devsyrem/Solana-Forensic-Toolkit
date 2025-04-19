@@ -12,6 +12,7 @@ import bcrypt from "bcryptjs";
 import WebSocket from "ws";
 import path from "path";
 import fs from "fs";
+import { getSolanaConnection, getSignaturesForAddress, getTransactionsInBatches } from "./solana";
 
 // Import wallet analysis, transaction clustering, and entity labeling routes
 import walletAnalysisRoutes from './routes/walletAnalysis';
@@ -430,45 +431,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid Solana address" });
       }
       
-      // Get transaction signatures
-      const signatures = await solanaConnection.getSignaturesForAddress(
-        publicKey, 
-        { limit, before }
-      );
-      
-      // Get transaction details
-      const transactions = await Promise.all(
-        signatures.map(async (sig) => {
-          try {
-            const tx = await solanaConnection.getTransaction(sig.signature, {
-              maxSupportedTransactionVersion: 0,
-            });
-            
+      // Use our new helper function with retry logic
+      try {
+        // Get transaction signatures with built-in retry
+        const signatures = await getSignaturesForAddress(
+          publicKey, 
+          { limit, before }
+        );
+        
+        // Simple case: if only fetching limited basic info, just return signatures
+        if (limit <= 20) {
+          const transactions = signatures.map(sig => ({
+            signature: sig.signature,
+            blockTime: sig.blockTime,
+            slot: sig.slot,
+            err: sig.err,
+            memo: sig.memo,
+            status: sig.err ? 'failed' : 'success',
+          }));
+          
+          return res.json(transactions);
+        }
+        
+        // If need more details, use batching with retries for larger requests
+        const txSignatures = signatures.map(sig => sig.signature);
+        const txDetails = await getTransactionsInBatches(txSignatures);
+        
+        // Map to consistent format
+        const transactions = txDetails.map(({ signature, transaction, error }) => {
+          // Find the original signature info
+          const sigInfo = signatures.find(s => s.signature === signature);
+          
+          if (!transaction || error) {
             return {
-              signature: sig.signature,
-              blockTime: sig.blockTime,
-              slot: sig.slot,
-              err: sig.err,
-              memo: sig.memo,
-              fee: tx?.meta?.fee || 0,
-              status: tx?.meta?.err ? 'failed' : 'success',
-            };
-          } catch (error) {
-            return {
-              signature: sig.signature,
-              blockTime: sig.blockTime,
-              slot: sig.slot,
-              err: sig.err,
-              memo: sig.memo,
+              signature,
+              blockTime: sigInfo?.blockTime,
+              slot: sigInfo?.slot,
+              err: sigInfo?.err || error,
+              memo: sigInfo?.memo,
               status: 'unknown',
             };
           }
-        })
-      );
-      
-      return res.json(transactions);
-    } catch (error) {
-      return res.status(500).json({ message: "Error fetching Solana transactions" });
+          
+          return {
+            signature,
+            blockTime: sigInfo?.blockTime,
+            slot: sigInfo?.slot,
+            err: sigInfo?.err,
+            memo: sigInfo?.memo,
+            fee: transaction.meta?.fee || 0,
+            status: transaction.meta?.err ? 'failed' : 'success',
+          };
+        });
+        
+        return res.json(transactions);
+      } catch (fetchError: any) {
+        console.error(`Error fetching transaction data for ${address}:`, fetchError.message);
+        return res.status(500).json({ 
+          message: "Error fetching Solana transactions", 
+          error: fetchError.message
+        });
+      }
+    } catch (error: any) {
+      console.error("Unhandled error in transaction fetch:", error);
+      return res.status(500).json({ 
+        message: "Error fetching Solana transactions", 
+        error: error.message 
+      });
     }
   });
 
@@ -476,14 +505,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { signature } = req.params;
       
-      // Get transaction details
-      const transaction = await solanaConnection.getTransaction(signature, {
-        maxSupportedTransactionVersion: 0,
-      });
+      // Use our new batching function to get transaction with retry logic
+      const [txResult] = await getTransactionsInBatches([signature]);
       
-      if (!transaction) {
-        return res.status(404).json({ message: "Transaction not found" });
+      if (!txResult || !txResult.transaction) {
+        const errorMsg = txResult?.error || "Transaction not found";
+        console.log(`Transaction not found or error: ${errorMsg}`);
+        return res.status(404).json({ message: errorMsg });
       }
+      
+      const transaction = txResult.transaction;
       
       // Use getAccountKeys() for versioned transactions
       const accountKeys = transaction.transaction.message.staticAccountKeys || 
@@ -511,9 +542,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           key.toBase58()
         ),
       });
-    } catch (error) {
-      console.error("Error fetching transaction details:", error);
-      return res.status(500).json({ message: "Error fetching transaction details" });
+    } catch (error: any) {
+      console.error("Error fetching transaction details:", error.message || error);
+      return res.status(500).json({ 
+        message: "Error fetching transaction details",
+        error: error.message || "Unknown error"
+      });
     }
   });
 
