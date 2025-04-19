@@ -73,7 +73,7 @@ export default function Visualization() {
   // Update URL when address changes
   useEffect(() => {
     if (address && isValidAddress && address !== walletAddress) {
-      setLocation(`/visualization/${address}`);
+      setLocation(`/rpc-visualization/${address}`);
     }
   }, [address, isValidAddress, walletAddress, setLocation]);
 
