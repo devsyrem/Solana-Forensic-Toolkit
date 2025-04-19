@@ -74,27 +74,42 @@ export function useSolanaData({
     isLoading: isLoadingDetails,
     error: detailsError,
   } = useQuery<any[]>({
-    queryKey: [`/api/solana/transactions/details/${address}`],
+    queryKey: [`/api/solana/transaction/details/${address}`],
     enabled: !!transactions && transactions.length > 0,
     queryFn: async () => {
-      // Filter out transactions we've already processed
-      const newTransactions = transactions.filter(
-        tx => !processedSignatures.has(tx.signature)
-      );
-      
-      if (newTransactions.length === 0) return [];
-      
-      // Get transaction details for new transactions
-      const details = await Promise.all(
-        newTransactions.map(tx => solanaAPI.getTransactionDetail(tx.signature))
-      );
-      
-      // Update processed signatures
-      const newSignatures = new Set(processedSignatures);
-      newTransactions.forEach(tx => newSignatures.add(tx.signature));
-      setProcessedSignatures(newSignatures);
-      
-      return details;
+      try {
+        // Filter out transactions we've already processed
+        const newTransactions = transactions.filter(
+          tx => !processedSignatures.has(tx.signature)
+        );
+        
+        if (newTransactions.length === 0) return [];
+        
+        // Get transaction details for new transactions
+        const details = await Promise.all(
+          newTransactions.map(async (tx) => {
+            try {
+              return await solanaAPI.getTransactionDetail(tx.signature);
+            } catch (error) {
+              console.error(`Error fetching details for transaction ${tx.signature}:`, error);
+              return null; // Return null for failed transactions
+            }
+          })
+        );
+        
+        // Filter out null results from failed transactions
+        const validDetails = details.filter(detail => detail !== null);
+        
+        // Update processed signatures (even for failed transactions to avoid retrying)
+        const newSignatures = new Set(processedSignatures);
+        newTransactions.forEach(tx => newSignatures.add(tx.signature));
+        setProcessedSignatures(newSignatures);
+        
+        return validDetails;
+      } catch (error) {
+        console.error("Error fetching transaction details:", error);
+        return []; // Return empty array in case of error
+      }
     }
   });
 
@@ -139,8 +154,8 @@ export function useSolanaData({
       
       // Check for program filters
       if (filters.programs && filters.programs.length > 0) {
-        const txPrograms = tx.instructions.map(ix => ix.programId);
-        const hasMatchingProgram = txPrograms.some(prog => 
+        const txPrograms = tx.instructions.map((ix: any) => ix.programId);
+        const hasMatchingProgram = txPrograms.some((prog: string) => 
           filters.programs?.includes(prog)
         );
         if (!hasMatchingProgram) return;
@@ -154,12 +169,12 @@ export function useSolanaData({
       txDates.set(dateKey, dateData);
       
       // Process account keys to create nodes and edges
-      tx.accountKeys.forEach(account => {
+      tx.accountKeys.forEach((account: string) => {
         if (account === mainAddress) return; // Skip main wallet, already added
         
         if (!nodes.has(account)) {
           // Determine if this is a program or wallet
-          const isProgramAccount = tx.instructions.some(ix => ix.programId === account);
+          const isProgramAccount = tx.instructions.some((ix: any) => ix.programId === account);
           
           nodes.set(account, {
             id: account,

@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { solanaAPI } from "@/lib/solanaAPI";
-import { SolanaAccount, SolanaTransaction } from "@/types/solana";
+import type { SolanaTransaction } from "@/types/solana";
 import { isValidSolanaAddress } from "@/lib/utils";
+
+// Define a more specific type for the wallet data
+interface WalletAccount {
+  address: string;
+  balance: number;
+  [key: string]: any;
+}
 
 interface UseWalletProps {
   address?: string;
@@ -10,7 +17,7 @@ interface UseWalletProps {
 }
 
 interface UseWalletResult {
-  wallet: SolanaAccount | null;
+  wallet: WalletAccount | null;
   transactions: SolanaTransaction[];
   isLoading: boolean;
   error: Error | null;
@@ -32,9 +39,11 @@ export function useWallet({
     data: wallet,
     isLoading: isLoadingWallet,
     error: walletError,
-  } = useQuery({
+  } = useQuery<WalletAccount>({
     queryKey: [`/api/solana/account/${address}`],
     enabled: !!address && isValidAddress,
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Query for transactions
@@ -42,9 +51,11 @@ export function useWallet({
     data: initialTransactions,
     isLoading: isLoadingTransactions,
     error: transactionsError,
-  } = useQuery({
+  } = useQuery<SolanaTransaction[]>({
     queryKey: [`/api/solana/transactions/${address}?limit=${transactionLimit}`],
     enabled: !!address && isValidAddress,
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Update transactions when initial data is loaded
