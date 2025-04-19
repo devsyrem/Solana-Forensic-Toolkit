@@ -24,15 +24,15 @@
 
 ## Overview
 
-SolFlow is a comprehensive blockchain analytics platform designed to transform complex Solana transaction data into intuitive, user-friendly visualizations and insights. The platform empowers users to visualize transaction flows between wallets, track funding sources, identify suspicious patterns, and collaborate in real-time with team members.
+Solana Forensic Toolkit is a comprehensive blockchain analytics platform designed to transform complex Solana transaction data into intuitive, user-friendly visualizations and insights. The platform empowers users to visualize transaction flows between wallets, track funding sources, identify suspicious patterns, and collaborate in real-time with team members.
 
-In an era where blockchain transactions continue to grow in complexity and volume, SolFlow addresses the critical need for transparent, accessible, and collaborative blockchain analysis tools. Whether you're a financial investigator, compliance professional, researcher, or crypto enthusiast, SolFlow provides powerful visualization capabilities to understand and analyze on-chain activities.
+In an era where blockchain transactions continue to grow in complexity and volume, Solana Forensic Toolkit addresses the critical need for transparent, accessible, and collaborative blockchain analysis tools. Whether you're a financial investigator, compliance professional, researcher, or crypto enthusiast, Solana Forensic Toolkit provides powerful visualization capabilities to understand and analyze on-chain activities.
 
 ## Key Features
 
 ### Interactive Transaction Flow Visualization
 
-SolFlow's core functionality centers around its interactive flow visualization engine, which displays transaction relationships between wallets on the Solana blockchain. The visualization:
+Solana Forensic Toolkit's core functionality centers around its interactive flow visualization engine, which displays transaction relationships between wallets on the Solana blockchain. The visualization:
 
 - Presents wallets as nodes and transactions as directional edges
 - Supports multiple layout algorithms (force-directed, circular, hierarchical)
@@ -55,7 +55,7 @@ The platform provides comprehensive wallet analysis features:
 
 ### Collaborative Analysis Environment
 
-SolFlow introduces collaborative blockchain analysis with:
+Solana Forensic Toolkit introduces collaborative blockchain analysis with:
 
 - Real-time team collaboration on visualizations
 - Team management with customizable roles and permissions
@@ -76,7 +76,7 @@ The platform maintains data integrity through:
 
 ## Technical Architecture
 
-SolFlow is built on a modern, scalable architecture:
+Solana Forensic Toolkit is built on a modern, scalable architecture:
 
 ### Frontend Technologies
 
@@ -105,7 +105,7 @@ SolFlow is built on a modern, scalable architecture:
 
 ### Prerequisites
 
-To run SolFlow locally, you'll need:
+To run Solana Forensic Toolkit locally, you'll need:
 
 - Node.js (v18+)
 - PostgreSQL database
@@ -122,7 +122,7 @@ To run SolFlow locally, you'll need:
 3. Configure environment variables:
    ```
    # Database Configuration
-   DATABASE_URL=postgresql://username:password@localhost:5432/solflow
+   DATABASE_URL=postgresql://username:password@localhost:5432/Solana Forensic Toolkit
 
    # Solana Configuration
    SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
@@ -154,7 +154,7 @@ Open your web browser and navigate to:
 http://localhost:5000
 ```
 
-You should see the SolFlow login page. Since this is a fresh installation, you'll need to create a new account.
+You should see the Solana Forensic Toolkit login page. Since this is a fresh installation, you'll need to create a new account.
 
 ### Initial Setup
 
@@ -167,7 +167,7 @@ You should see the SolFlow login page. Since this is a fresh installation, you'l
 
 ### Navigation
 
-The SolFlow interface is organized into several key sections:
+The Solana Forensic Toolkit interface is organized into several key sections:
 
 1. **Transaction Flow Visualization**: The main visualization area showing wallet nodes and transaction edges
 2. **Filter Sidebar**: Controls for filtering the visualization by date, amount, and transaction type
@@ -207,13 +207,13 @@ The filter sidebar allows you to:
 
 ## Collaboration Features
 
-SolFlow offers a comprehensive suite of collaboration tools designed specifically for blockchain analysis:
+Solana Forensic Toolkit offers a comprehensive suite of collaboration tools designed specifically for blockchain analysis:
 
 ### Team Management
 
 #### Creating Teams
 
-Teams in SolFlow provide a way to organize collaborators working on related analyses:
+Teams in Solana Forensic Toolkit provide a way to organize collaborators working on related analyses:
 
 1. Navigate to the "Team" tab in any visualization
 2. Click "Create New Team"
@@ -224,7 +224,7 @@ Once created, you'll become the team admin automatically.
 
 #### Team Roles and Permissions
 
-SolFlow offers three role levels with different capabilities:
+Solana Forensic Toolkit offers three role levels with different capabilities:
 
 1. **Admin**:
    - Full control over team settings
@@ -274,7 +274,7 @@ The visualization will now be accessible to all team members based on their role
 
 ### Real-time Collaboration
 
-SolFlow enables real-time collaboration through WebSocket connections:
+Solana Forensic Toolkit enables real-time collaboration through WebSocket connections:
 
 1. **User Presence**: See who's currently viewing the same visualization
 2. **Live Updates**: Changes to visualizations and annotations appear instantly for all viewers
@@ -282,7 +282,7 @@ SolFlow enables real-time collaboration through WebSocket connections:
 
 ### Annotations and Comments
 
-SolFlow allows users to add annotations to different elements:
+Solana Forensic Toolkit allows users to add annotations to different elements:
 
 1. **Visualization Annotations**: General notes about the entire visualization
 2. **Wallet Annotations**: Notes attached to specific wallet nodes
@@ -299,7 +299,7 @@ Users can also reply to annotations, creating threaded discussions about specifi
 
 ## Codebase Structure
 
-The SolFlow codebase follows a client-server architecture with clear separation of concerns:
+The Solana Forensic Toolkit codebase follows a client-server architecture with clear separation of concerns:
 
 ```
 ├── client/                 # Frontend React application
@@ -615,7 +615,7 @@ The application processes Solana transactions in several steps:
 
 ## Dependencies
 
-SolFlow relies on numerous dependencies to provide its functionality. Below is a detailed breakdown of the key dependencies and how they contribute to the application:
+Solana Forensic Toolkit relies on numerous dependencies to provide its functionality. Below is a detailed breakdown of the key dependencies and how they contribute to the application:
 
 ### Core Frontend Dependencies
 
@@ -623,37 +623,37 @@ SolFlow relies on numerous dependencies to provide its functionality. Below is a
   - Purpose: Advanced data fetching, caching, and state management
   - Features: Automatic revalidation, background fetching, pagination support, optimistic updates
   - Why it's used: Provides a robust solution for handling server state in React components with built-in caching, retry logic, and deduplication of requests
-  - Usage in SolFlow: Used for all API requests to fetch wallet data, transactions, and user information
+  - Usage in Solana Forensic Toolkit: Used for all API requests to fetch wallet data, transactions, and user information
 
 - **d3 (v7.x)**: 
   - Purpose: Data visualization library for creating complex, interactive graphics
   - Features: Wide range of visualization primitives, transitions, animations, force simulations
   - Why it's used: Industry standard for creating custom, interactive data visualizations with fine-grained control
-  - Usage in SolFlow: Powers the transaction flow visualization with force-directed layouts, zoom/pan capabilities, and interactive elements
+  - Usage in Solana Forensic Toolkit: Powers the transaction flow visualization with force-directed layouts, zoom/pan capabilities, and interactive elements
 
 - **react-hook-form (v7.x)**: 
   - Purpose: Form state management and validation
   - Features: Performance-optimized form handling, validation, error management
   - Why it's used: Reduces re-renders and provides a simple API for complex form logic
-  - Usage in SolFlow: Handles all forms including user registration, team creation, and visualization filtering
+  - Usage in Solana Forensic Toolkit: Handles all forms including user registration, team creation, and visualization filtering
 
 - **zod (v3.x)**: 
   - Purpose: TypeScript-first schema validation
   - Features: Runtime type checking, error handling, TypeScript integration
   - Why it's used: Provides both runtime validation and static type inference
-  - Usage in SolFlow: Validates form inputs, API payloads, and ensures type safety throughout the application
+  - Usage in Solana Forensic Toolkit: Validates form inputs, API payloads, and ensures type safety throughout the application
 
 - **wouter (v2.x)**: 
   - Purpose: Client-side routing
   - Features: Lightweight (1.3kB), hook-based API, path pattern matching
   - Why it's used: Simple alternative to React Router with minimal footprint
-  - Usage in SolFlow: Handles navigation between application pages and maintains URL state
+  - Usage in Solana Forensic Toolkit: Handles navigation between application pages and maintains URL state
 
 - **tailwindcss (v3.x)**: 
   - Purpose: Utility-first CSS framework
   - Features: Responsive design utilities, dark mode support, customization options
   - Why it's used: Accelerates UI development with composable utility classes
-  - Usage in SolFlow: Primary styling solution for all UI components
+  - Usage in Solana Forensic Toolkit: Primary styling solution for all UI components
 
 ### UI Component Libraries
 
@@ -661,31 +661,31 @@ SolFlow relies on numerous dependencies to provide its functionality. Below is a
   - Purpose: Unstyled, accessible UI primitives
   - Features: Keyboard navigation, ARIA attributes, focus management
   - Why it's used: Provides accessibility-first building blocks for UI components
-  - Usage in SolFlow: Foundation for custom UI components including dialogs, dropdowns, and tabs
+  - Usage in Solana Forensic Toolkit: Foundation for custom UI components including dialogs, dropdowns, and tabs
 
 - **class-variance-authority (v0.7.x)**: 
   - Purpose: Building type-safe UI components with variants
   - Features: Type-safe variant API, conditional class application
   - Why it's used: Simplifies creating components with multiple variants and states
-  - Usage in SolFlow: Used to create customizable UI components with consistent API
+  - Usage in Solana Forensic Toolkit: Used to create customizable UI components with consistent API
 
 - **shadcn/ui**: 
   - Purpose: Collection of reusable UI components
   - Features: Built on Radix UI, styled with Tailwind CSS, fully customizable
   - Why it's used: Provides high-quality, accessible components without the constraints of a component library
-  - Usage in SolFlow: Used for UI elements like buttons, cards, modals, and form inputs
+  - Usage in Solana Forensic Toolkit: Used for UI elements like buttons, cards, modals, and form inputs
 
 - **lucide-react (v0.284.x)**: 
   - Purpose: Icon library for React
   - Features: 1000+ icons, customizable size/color, consistent design
   - Why it's used: Provides a comprehensive set of well-designed icons
-  - Usage in SolFlow: Used for all icons throughout the interface for actions, navigation, and visual cues
+  - Usage in Solana Forensic Toolkit: Used for all icons throughout the interface for actions, navigation, and visual cues
 
 - **tailwindcss-animate (v1.0.x)**: 
   - Purpose: Animation utilities for Tailwind CSS
   - Features: Transition, animation, and transform utilities
   - Why it's used: Extends Tailwind with animation capabilities
-  - Usage in SolFlow: Used for micro-interactions, loading states, and UI transitions
+  - Usage in Solana Forensic Toolkit: Used for micro-interactions, loading states, and UI transitions
 
 ### Backend Dependencies
 
@@ -693,43 +693,43 @@ SolFlow relies on numerous dependencies to provide its functionality. Below is a
   - Purpose: Web application framework for Node.js
   - Features: Routing, middleware, HTTP utilities
   - Why it's used: Industry standard for building robust Node.js web servers
-  - Usage in SolFlow: Powers the API server with route handling and middleware
+  - Usage in Solana Forensic Toolkit: Powers the API server with route handling and middleware
 
 - **express-session (v1.17.x)**: 
   - Purpose: Session middleware for Express
   - Features: Session creation, storage, and management
   - Why it's used: Provides secure session handling capabilities
-  - Usage in SolFlow: Manages user authentication sessions
+  - Usage in Solana Forensic Toolkit: Manages user authentication sessions
 
 - **passport (v0.6.x)**: 
   - Purpose: Authentication middleware for Node.js
   - Features: Flexible authentication strategies, session integration
   - Why it's used: Standardized approach to authentication with various strategies
-  - Usage in SolFlow: Handles user authentication with local strategy (username/password)
+  - Usage in Solana Forensic Toolkit: Handles user authentication with local strategy (username/password)
 
 - **bcryptjs (v2.4.x)**: 
   - Purpose: Password hashing library
   - Features: Secure password hashing, salting, and comparison
   - Why it's used: Industry standard for secure password storage
-  - Usage in SolFlow: Securely stores user passwords in the database
+  - Usage in Solana Forensic Toolkit: Securely stores user passwords in the database
 
 - **@solana/web3.js (v1.87.x)**: 
   - Purpose: JavaScript API for Solana blockchain
   - Features: Transaction creation, account management, RPC methods
   - Why it's used: Official library for interacting with Solana
-  - Usage in SolFlow: Fetches transaction data, account information, and other blockchain data
+  - Usage in Solana Forensic Toolkit: Fetches transaction data, account information, and other blockchain data
 
 - **drizzle-orm (v0.29.x)**: 
   - Purpose: TypeScript ORM for SQL databases
   - Features: Type-safe queries, migrations, relations
   - Why it's used: Modern, lightweight ORM with excellent TypeScript support
-  - Usage in SolFlow: Handles all database operations with type safety
+  - Usage in Solana Forensic Toolkit: Handles all database operations with type safety
 
 - **@neondatabase/serverless (v0.6.x)**: 
   - Purpose: PostgreSQL client for serverless environments
   - Features: Connection pooling, WebSocket transport, prepared statements
   - Why it's used: Optimized for serverless deployments with efficient connections
-  - Usage in SolFlow: Connects to Neon PostgreSQL database for all data storage
+  - Usage in Solana Forensic Toolkit: Connects to Neon PostgreSQL database for all data storage
 
 ### Real-time Collaboration
 
@@ -737,13 +737,13 @@ SolFlow relies on numerous dependencies to provide its functionality. Below is a
   - Purpose: WebSocket implementation for Node.js
   - Features: RFC-6455 compliant, high performance, minimal abstractions
   - Why it's used: Mature, stable WebSocket server implementation
-  - Usage in SolFlow: Enables real-time communication for collaborative features
+  - Usage in Solana Forensic Toolkit: Enables real-time communication for collaborative features
 
 - **memorystore (v1.6.x)**: 
   - Purpose: Memory-backed session store for Express
   - Features: Session expiration, memory usage limiting
   - Why it's used: Simple session storage solution with automatic cleanup
-  - Usage in SolFlow: Stores session data with TTL for authentication
+  - Usage in Solana Forensic Toolkit: Stores session data with TTL for authentication
 
 ### Development Tools
 
@@ -751,25 +751,25 @@ SolFlow relies on numerous dependencies to provide its functionality. Below is a
   - Purpose: Typed superset of JavaScript
   - Features: Static typing, modern JavaScript features, tooling integration
   - Why it's used: Enhances code quality and developer experience
-  - Usage in SolFlow: Used throughout the codebase for type safety
+  - Usage in Solana Forensic Toolkit: Used throughout the codebase for type safety
 
 - **vite (v4.4.x)**: 
   - Purpose: Frontend build tool and development server
   - Features: HMR, ESM, optimized builds, plugin architecture
   - Why it's used: Significantly faster than traditional bundlers
-  - Usage in SolFlow: Development server and production build tool
+  - Usage in Solana Forensic Toolkit: Development server and production build tool
 
 - **drizzle-kit (v0.20.x)**: 
   - Purpose: CLI tools for Drizzle ORM
   - Features: Migration generation, schema pushing, database introspection
   - Why it's used: Companion tool for Drizzle ORM
-  - Usage in SolFlow: Manages database schema migrations and updates
+  - Usage in Solana Forensic Toolkit: Manages database schema migrations and updates
 
 - **tsx (v3.13.x)**: 
   - Purpose: TypeScript execution environment
   - Features: Fast compilation, ESM support, watch mode
   - Why it's used: Allows direct execution of TypeScript files
-  - Usage in SolFlow: Runs the backend server during development
+  - Usage in Solana Forensic Toolkit: Runs the backend server during development
 
 ### Additional Utilities
 
@@ -777,25 +777,25 @@ SolFlow relies on numerous dependencies to provide its functionality. Below is a
   - Purpose: JavaScript date utility library
   - Features: Date manipulation, formatting, parsing
   - Why it's used: Modular design with tree-shaking support
-  - Usage in SolFlow: Handles all date and time operations in the application
+  - Usage in Solana Forensic Toolkit: Handles all date and time operations in the application
 
 - **nanoid (v4.0.x)**: 
   - Purpose: Unique ID generator
   - Features: Secure, URL-friendly, small footprint
   - Why it's used: More compact and secure than UUID
-  - Usage in SolFlow: Generates unique identifiers for entities without database IDs
+  - Usage in Solana Forensic Toolkit: Generates unique identifiers for entities without database IDs
 
 - **clsx (v2.0.x)**: 
   - Purpose: Conditional class name builder
   - Features: Small footprint, supports various input types
   - Why it's used: Simplifies conditional class application
-  - Usage in SolFlow: Used to conditionally apply CSS classes throughout the UI
+  - Usage in Solana Forensic Toolkit: Used to conditionally apply CSS classes throughout the UI
 
 - **recharts (v2.8.x)**: 
   - Purpose: Charting library for React
   - Features: Responsive charts, customizable components, animation
   - Why it's used: Built on D3 with React component API
-  - Usage in SolFlow: Creates statistical charts for wallet transaction analysis
+  - Usage in Solana Forensic Toolkit: Creates statistical charts for wallet transaction analysis
 
 ## Performance Optimizations
 
@@ -810,7 +810,7 @@ The application implements several performance optimizations:
 
 ## Security Considerations
 
-SolFlow implements several security measures:
+Solana Forensic Toolkit implements several security measures:
 
 1. **Authentication**: Secure login with session management
 2. **Authorization**: Role-based access control for teams and visualizations
@@ -886,7 +886,7 @@ If you're not seeing real-time updates:
 
 ## Future Roadmap
 
-The SolFlow project continues to evolve with planned enhancements:
+The Solana Forensic Toolkit project continues to evolve with planned enhancements:
 
 1. **Multi-chain Support**: Extending visualization capabilities to other blockchains
 2. **Advanced Pattern Detection**: Machine learning integration for anomaly detection
@@ -897,7 +897,7 @@ The SolFlow project continues to evolve with planned enhancements:
 
 ## Contributing
 
-We welcome contributions to SolFlow! To contribute:
+We welcome contributions to Solana Forensic Toolkit! To contribute:
 
 1. Fork the repository
 2. Create a feature branch
@@ -908,11 +908,11 @@ Please ensure your code follows the project's coding standards and includes appr
 
 ## License
 
-SolFlow is available under the MIT License. See the LICENSE file for details.
+Solana Forensic Toolkit is available under the MIT License. See the LICENSE file for details.
 
 ## Acknowledgments
 
-SolFlow was made possible through collaboration with blockchain investigators, compliance professionals, and the open-source community. Special thanks to the Solana ecosystem for providing robust blockchain infrastructure that makes this analysis possible.
+Solana Forensic Toolkit was made possible through collaboration with blockchain investigators, compliance professionals, and the open-source community. Special thanks to the Solana ecosystem for providing robust blockchain infrastructure that makes this analysis possible.
 
 ---
 
