@@ -484,6 +484,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ),
       });
     } catch (error) {
+      console.error("Error fetching transaction details:", error);
+      return res.status(500).json({ message: "Error fetching transaction details" });
+    }
+  });
+
+  // New endpoint: Get transaction details for a specific address
+  app.get("/api/solana/transaction/details/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      // Validate address is a valid Solana public key
+      let publicKey: PublicKey;
+      try {
+        publicKey = new PublicKey(address);
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid Solana address" });
+      }
+      
+      // Get transaction signatures for this address (limited to 10)
+      const signatures = await solanaConnection.getSignaturesForAddress(publicKey, { limit: 10 });
+      
+      if (!signatures || signatures.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get transaction details for each signature
+      const transactionDetails = await Promise.all(
+        signatures.map(async (sig) => {
+          try {
+            const tx = await solanaConnection.getTransaction(sig.signature, {
+              maxSupportedTransactionVersion: 0,
+            });
+            
+            if (!tx) return null;
+            
+            // Use getAccountKeys() for versioned transactions
+            const accountKeys = tx.transaction.message.staticAccountKeys || 
+                            tx.transaction.message.getAccountKeys?.().keySegments().flat() || [];
+            
+            // Handle instructions for both legacy and versioned transactions
+            const instructions = 'instructions' in tx.transaction.message ?
+              tx.transaction.message.instructions :
+              [];
+              
+            return {
+              signature: sig.signature,
+              blockTime: tx.blockTime,
+              slot: tx.slot,
+              fee: tx.meta?.fee || 0,
+              status: tx.meta?.err ? 'failed' : 'success',
+              instructions: instructions.map((ix: any) => ({
+                programId: accountKeys[ix.programIdIndex]?.toBase58() || '',
+                accounts: ix.accounts.map((acc: number) => 
+                  accountKeys[acc]?.toBase58() || ''
+                ),
+                data: ix.data
+              })),
+              accountKeys: accountKeys.map(key => key?.toBase58() || '')
+            };
+          } catch (error) {
+            console.error(`Error fetching transaction details for signature ${sig.signature}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out null values (failed transactions)
+      const validTransactions = transactionDetails.filter(tx => tx !== null);
+      
+      return res.json(validTransactions);
+    } catch (error) {
+      console.error("Error fetching transactions details:", error);
       return res.status(500).json({ message: "Error fetching transaction details" });
     }
   });
