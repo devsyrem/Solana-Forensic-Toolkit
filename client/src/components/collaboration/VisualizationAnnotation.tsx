@@ -1,556 +1,683 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef, RefObject } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  MessageSquare,
-  PlusCircle,
-  Edit2,
-  Trash2,
-  X,
-  Check,
-  MapPin,
-  ArrowRight,
-} from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { format, formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, MessageSquare, Edit, Trash2, Reply, SendHorizontal, PenSquare, MoreHorizontal } from "lucide-react";
 
-type NodeAnnotation = {
+interface Comment {
   id: number;
-  content: string;
+  visualizationId: number;
   userId: number;
   username: string;
-  visualizationId: number;
-  createdAt: string;
-  updatedAt?: string;
-  position: { x: number; y: number };
+  content: string;
   referencedNodeAddress?: string;
   referencedTransactionSignature?: string;
-  profilePicture?: string;
-  resolved: boolean;
-  replies?: NodeAnnotation[];
-};
+  createdAt: string;
+  updatedAt?: string;
+  parentId?: number;
+  replies?: Comment[];
+}
 
-type AnnotationProps = {
+interface VisualizationAnnotationProps {
   visualizationId: number;
   selectedNodeAddress?: string;
   selectedTransactionSignature?: string;
-  svgRef: React.RefObject<SVGSVGElement>;
-};
+  svgRef?: RefObject<SVGSVGElement>;
+}
 
-export default function VisualizationAnnotation({
-  visualizationId,
-  selectedNodeAddress,
+export default function VisualizationAnnotation({ 
+  visualizationId, 
+  selectedNodeAddress, 
   selectedTransactionSignature,
-  svgRef,
-}: AnnotationProps) {
-  const [annotations, setAnnotations] = useState<NodeAnnotation[]>([]);
-  const [newAnnotation, setNewAnnotation] = useState("");
-  const [editingAnnotation, setEditingAnnotation] = useState<number | null>(null);
-  const [editContent, setEditContent] = useState("");
-  const [annotationPosition, setAnnotationPosition] = useState<{ x: number; y: number } | null>(null);
-  const [showAnnotationModal, setShowAnnotationModal] = useState(false);
+  svgRef
+}: VisualizationAnnotationProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Mock annotations
-  const mockAnnotations: NodeAnnotation[] = [
-    {
-      id: 1,
-      content: "This wallet seems to be connected to a major exchange. The transaction pattern matches with their hot wallet behavior.",
-      userId: 1,
-      username: "alex_blockchain",
-      visualizationId: 1,
-      createdAt: "2024-04-01T14:30:00Z",
-      position: { x: 150, y: 200 },
-      referencedNodeAddress: "8zJ9SBGqpvRMCYhQ5JSbixvYywX2VxvkVyNr4itZMpGh",
-      profilePicture: "/avatars/alex.png",
-      resolved: false,
-      replies: [
-        {
-          id: 4,
-          content: "I agree, it matches the pattern we've seen with Binance hot wallets.",
-          userId: 2,
-          username: "sara_analyst",
-          visualizationId: 1,
-          createdAt: "2024-04-01T15:45:00Z",
-          position: { x: 150, y: 200 },
-          referencedNodeAddress: "8zJ9SBGqpvRMCYhQ5JSbixvYywX2VxvkVyNr4itZMpGh",
-          profilePicture: "/avatars/sara.png",
-          resolved: false,
-        },
-      ],
-    },
-    {
-      id: 2,
-      content: "This transaction is unusually large and doesn't match the typical pattern for this wallet. Flagging for review.",
-      userId: 3,
-      username: "mike_researcher",
-      visualizationId: 1,
-      createdAt: "2024-04-02T09:15:00Z",
-      position: { x: 300, y: 250 },
-      referencedTransactionSignature: "4XE9kWpXB3RW9cQSXQ2LWmkA9Z1Y5Z9d8RNZ6vVF2tM5tG6Md7RXsVxTxnwgdk2UGtMuYHHZHP4Qu8H8HCEjYV2X",
-      profilePicture: "/avatars/mike.png",
-      resolved: true,
-    },
-    {
-      id: 3,
-      content: "This cluster of wallets appears to be related to a DeFi protocol. Note the recurring interaction with the same program addresses.",
-      userId: 2,
-      username: "sara_analyst",
-      visualizationId: 1,
-      createdAt: "2024-04-03T11:20:00Z",
-      position: { x: 450, y: 150 },
-      referencedNodeAddress: "3Jq6YQVLb5woahzJgGJQXnY8Ekc8oVDA8HK4eP4UxbdE",
-      profilePicture: "/avatars/sara.png",
-      resolved: false,
-    },
-  ];
-
-  // In a real implementation, this would be fetched from the API
-  /*
-  const { data, isLoading, error } = useQuery({
+  const [activeTab, setActiveTab] = useState("all");
+  const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [showConfirmDelete, setShowConfirmDelete] = useState<number | null>(null);
+  
+  // Get annotations for the visualization
+  const { data: annotations, isLoading: isLoadingAnnotations } = useQuery({
     queryKey: ['/api/visualizations', visualizationId, 'annotations'],
     enabled: !!visualizationId,
   });
-
-  useEffect(() => {
-    if (data) {
-      setAnnotations(data);
-    }
-  }, [data]);
-
+  
+  // Create a new annotation
   const createAnnotationMutation = useMutation({
-    mutationFn: async (annotation: { 
-      content: string; 
-      visualizationId: number; 
-      position: { x: number; y: number }; 
+    mutationFn: async (annotation: {
+      content: string;
       referencedNodeAddress?: string;
       referencedTransactionSignature?: string;
     }) => {
-      return apiRequest('/api/annotations', {
+      return apiRequest(`/api/visualizations/${visualizationId}/annotations`, {
         method: 'POST',
         body: JSON.stringify(annotation),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/visualizations', visualizationId, 'annotations'] });
-      setNewAnnotation("");
-      setShowAnnotationModal(false);
       toast({
-        title: "Annotation added",
-        description: "Your annotation has been added to the visualization",
+        title: "Annotation created",
+        description: "Your annotation has been added",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/visualizations', visualizationId, 'annotations'] });
+      setCommentText("");
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to add annotation",
+        description: "Could not add your annotation. Please try again.",
       });
     },
   });
-
-  const updateAnnotationMutation = useMutation({
-    mutationFn: async ({ id, content }: { id: number; content: string }) => {
-      return apiRequest(`/api/annotations/${id}`, {
+  
+  // Reply to an annotation
+  const replyToAnnotationMutation = useMutation({
+    mutationFn: async ({ annotationId, content }: { annotationId: number, content: string }) => {
+      return apiRequest(`/api/annotations/${annotationId}/replies`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reply added",
+        description: "Your reply has been added to the annotation",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/visualizations', visualizationId, 'annotations'] });
+      setReplyingTo(null);
+      setReplyText("");
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to add reply",
+        description: "Could not add your reply. Please try again.",
+      });
+    },
+  });
+  
+  // Edit an annotation
+  const editAnnotationMutation = useMutation({
+    mutationFn: async ({ annotationId, content }: { annotationId: number, content: string }) => {
+      return apiRequest(`/api/annotations/${annotationId}`, {
         method: 'PATCH',
         body: JSON.stringify({ content }),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/visualizations', visualizationId, 'annotations'] });
-      setEditingAnnotation(null);
       toast({
         title: "Annotation updated",
         description: "Your annotation has been updated",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/visualizations', visualizationId, 'annotations'] });
+      setEditingCommentId(null);
+      setEditText("");
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to update annotation",
+        description: "Could not update your annotation. Please try again.",
+      });
     },
   });
-
+  
+  // Delete an annotation
   const deleteAnnotationMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest(`/api/annotations/${id}`, {
+    mutationFn: async (annotationId: number) => {
+      return apiRequest(`/api/annotations/${annotationId}`, {
         method: 'DELETE',
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/visualizations', visualizationId, 'annotations'] });
       toast({
         title: "Annotation deleted",
-        description: "Your annotation has been deleted",
+        description: "The annotation has been deleted",
       });
-    },
-  });
-
-  const resolveAnnotationMutation = useMutation({
-    mutationFn: async ({ id, resolved }: { id: number; resolved: boolean }) => {
-      return apiRequest(`/api/annotations/${id}/resolve`, {
-        method: 'PATCH',
-        body: JSON.stringify({ resolved }),
-      });
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/visualizations', visualizationId, 'annotations'] });
+      setShowConfirmDelete(null);
+    },
+    onError: (error) => {
       toast({
-        title: "Annotation updated",
-        description: "Annotation status has been updated",
+        variant: "destructive",
+        title: "Failed to delete annotation",
+        description: "Could not delete the annotation. Please try again.",
       });
     },
   });
-  */
-
-  useEffect(() => {
-    // For prototype: Just use mock annotations
-    setAnnotations(mockAnnotations);
-  }, []);
-
-  // Used in the actual integration - captures click position on the SVG for creating annotations
-  const handleAnnotationPlacement = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!svgRef.current) return;
+  
+  // Handle adding a new annotation
+  const handleAddAnnotation = () => {
+    if (!commentText.trim()) return;
     
-    const svgRect = svgRef.current.getBoundingClientRect();
-    const x = e.clientX - svgRect.left;
-    const y = e.clientY - svgRect.top;
-    
-    setAnnotationPosition({ x, y });
-    setShowAnnotationModal(true);
-  };
-
-  // For prototype: Adding a new annotation
-  const addAnnotation = () => {
-    if (!newAnnotation.trim()) return;
-    
-    const newId = Math.max(0, ...annotations.map(a => a.id)) + 1;
-    const position = annotationPosition || { x: 300, y: 300 }; // Default position
-    
-    const newAnnotationObj: NodeAnnotation = {
-      id: newId,
-      content: newAnnotation,
-      userId: 1, // Mock current user
-      username: "current_user",
-      visualizationId,
-      createdAt: new Date().toISOString(),
-      position,
-      referencedNodeAddress: selectedNodeAddress,
-      referencedTransactionSignature: selectedTransactionSignature,
-      profilePicture: "/avatars/user.png",
-      resolved: false,
+    const annotation: {
+      content: string;
+      referencedNodeAddress?: string;
+      referencedTransactionSignature?: string;
+    } = {
+      content: commentText,
     };
     
-    setAnnotations([...annotations, newAnnotationObj]);
-    setNewAnnotation("");
-    setShowAnnotationModal(false);
+    if (selectedNodeAddress) {
+      annotation.referencedNodeAddress = selectedNodeAddress;
+    }
     
-    toast({
-      title: "Annotation added",
-      description: "Your annotation has been added to the visualization",
+    if (selectedTransactionSignature) {
+      annotation.referencedTransactionSignature = selectedTransactionSignature;
+    }
+    
+    createAnnotationMutation.mutate(annotation);
+  };
+  
+  // Handle replying to an annotation
+  const handleReply = (annotationId: number) => {
+    if (!replyText.trim()) return;
+    
+    replyToAnnotationMutation.mutate({
+      annotationId,
+      content: replyText,
     });
   };
-
-  // For prototype: Updating an annotation
-  const updateAnnotation = (id: number) => {
-    if (!editContent.trim()) return;
+  
+  // Handle editing an annotation
+  const handleEdit = (annotation: Comment) => {
+    setEditingCommentId(annotation.id);
+    setEditText(annotation.content);
+  };
+  
+  // Handle saving edited annotation
+  const handleSaveEdit = (annotationId: number) => {
+    if (!editText.trim()) return;
     
-    const updatedAnnotations = annotations.map(annotation => 
-      annotation.id === id 
-        ? { 
-            ...annotation, 
-            content: editContent, 
-            updatedAt: new Date().toISOString() 
-          } 
-        : annotation
-    );
-    
-    setAnnotations(updatedAnnotations);
-    setEditingAnnotation(null);
-    
-    toast({
-      title: "Annotation updated",
-      description: "Your annotation has been updated",
+    editAnnotationMutation.mutate({
+      annotationId,
+      content: editText,
     });
   };
-
-  // For prototype: Deleting an annotation
-  const deleteAnnotation = (id: number) => {
-    const updatedAnnotations = annotations.filter(annotation => annotation.id !== id);
-    setAnnotations(updatedAnnotations);
-    
-    toast({
-      title: "Annotation deleted",
-      description: "Your annotation has been deleted",
-    });
+  
+  // Handle deleting an annotation
+  const handleDelete = (annotationId: number) => {
+    deleteAnnotationMutation.mutate(annotationId);
   };
-
-  // For prototype: Resolving/unresolving an annotation
-  const toggleResolveAnnotation = (id: number, resolved: boolean) => {
-    const updatedAnnotations = annotations.map(annotation => 
-      annotation.id === id 
-        ? { ...annotation, resolved } 
-        : annotation
-    );
+  
+  // Filter annotations based on the active tab
+  const getFilteredAnnotations = () => {
+    if (!annotations) return [];
     
-    setAnnotations(updatedAnnotations);
+    if (activeTab === "all") {
+      return annotations;
+    } else if (activeTab === "wallet") {
+      return annotations.filter((annotation: Comment) => 
+        annotation.referencedNodeAddress === selectedNodeAddress
+      );
+    } else if (activeTab === "transaction") {
+      return annotations.filter((annotation: Comment) => 
+        annotation.referencedTransactionSignature === selectedTransactionSignature
+      );
+    }
     
-    toast({
-      title: "Annotation updated",
-      description: `Annotation marked as ${resolved ? 'resolved' : 'unresolved'}`,
-    });
+    return annotations;
   };
-
-  // Format timestamp to relative time (e.g., "5 minutes ago")
-  const formatTime = (timestamp: string) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch (error) {
-      return "unknown time";
+  
+  // Get the target element label
+  const getTargetLabel = (annotation: Comment) => {
+    if (annotation.referencedNodeAddress) {
+      return `Wallet: ${formatAddress(annotation.referencedNodeAddress)}`;
+    } else if (annotation.referencedTransactionSignature) {
+      return `Transaction: ${formatAddress(annotation.referencedTransactionSignature)}`;
+    } else {
+      return "Visualization";
     }
   };
-
-  // Get initials for avatar fallback
-  const getInitials = (name: string) => {
-    return name.substring(0, 2).toUpperCase();
+  
+  // Format address for display
+  const formatAddress = (address: string) => {
+    if (!address) return "";
+    if (address.length <= 12) return address;
+    return `${address.substring(0, 6)}...${address.substring(address.length - 6)}`;
   };
-
+  
+  // Highlight the referenced node or transaction in the visualization
+  const highlightReference = (annotation: Comment) => {
+    if (!svgRef || !svgRef.current) return;
+    
+    // This would be implemented with D3.js or other visualization library
+    // For now, we'll just show a toast message
+    if (annotation.referencedNodeAddress) {
+      toast({
+        title: "Highlighted wallet",
+        description: `Focused on wallet ${formatAddress(annotation.referencedNodeAddress)}`,
+      });
+    } else if (annotation.referencedTransactionSignature) {
+      toast({
+        title: "Highlighted transaction",
+        description: `Focused on transaction ${formatAddress(annotation.referencedTransactionSignature)}`,
+      });
+    }
+  };
+  
+  // For demo purposes (no backend)
+  const demoAnnotations: Comment[] = [
+    {
+      id: 1,
+      visualizationId: 1,
+      userId: 1,
+      username: "alex_johnson",
+      content: "This wallet shows a pattern of splitting funds to multiple addresses before sending to exchanges.",
+      referencedNodeAddress: "DvCGv94hfo5JLNynwJmVp7tsgQJJTzR5uSKx8xZkxJQA",
+      createdAt: "2023-12-01T10:30:00Z",
+      replies: [
+        {
+          id: 4,
+          visualizationId: 1,
+          userId: 2,
+          username: "sarah_chen",
+          content: "Good catch! This is a typical money laundering pattern we've seen before.",
+          parentId: 1,
+          createdAt: "2023-12-01T11:15:00Z",
+        }
+      ]
+    },
+    {
+      id: 2,
+      visualizationId: 1,
+      userId: 3,
+      username: "mike_brown",
+      content: "This transaction is unusually large compared to the wallet's normal activity.",
+      referencedTransactionSignature: "5zrYs6XFQkCFZJxPTMjHzuvp7NWLZMcf1gBAXzXCQiRp4xc1RYFVZHFStXjmiZvU4BWrx",
+      createdAt: "2023-12-02T09:45:00Z",
+    },
+    {
+      id: 3,
+      visualizationId: 1,
+      userId: 2,
+      username: "sarah_chen",
+      content: "We should investigate all wallets connected to this main cluster.",
+      createdAt: "2023-12-03T14:20:00Z",
+    }
+  ];
+  
+  // Use demo data for UI
+  const displayAnnotations = annotations || demoAnnotations;
+  const filteredAnnotations = activeTab === "all" 
+    ? displayAnnotations 
+    : displayAnnotations.filter((annotation: Comment) => 
+        activeTab === "wallet" 
+          ? annotation.referencedNodeAddress === selectedNodeAddress
+          : annotation.referencedTransactionSignature === selectedTransactionSignature
+      );
+  
   return (
-    <>
-      {/* Annotation markers on visualization nodes */}
-      {annotations.map((annotation) => (
-        <Popover key={annotation.id}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute rounded-full w-6 h-6 p-1 bg-solana-secondary text-white hover:bg-solana-secondary-light"
-              style={{
-                left: `${annotation.position.x}px`,
-                top: `${annotation.position.y}px`,
-                transform: "translate(-50%, -50%)",
-                zIndex: 100,
-              }}
-            >
-              <MessageSquare className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="bg-solana-dark-light border-solana-dark-lighter w-72">
-            <div className="space-y-2">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    {annotation.profilePicture ? (
-                      <AvatarImage src={annotation.profilePicture} alt={annotation.username} />
-                    ) : (
-                      <AvatarFallback>{getInitials(annotation.username)}</AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div>
-                    <div className="text-sm font-medium text-white">{annotation.username}</div>
-                    <div className="text-xs text-gray-400">{formatTime(annotation.createdAt)}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {annotation.resolved && (
-                    <Badge className="bg-green-600 text-[10px]">Resolved</Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-gray-400 hover:text-white"
-                    onClick={() => toggleResolveAnnotation(annotation.id, !annotation.resolved)}
-                  >
-                    {annotation.resolved ? <X className="h-3 w-3" /> : <Check className="h-3 w-3" />}
-                  </Button>
-                </div>
-              </div>
-              
-              {editingAnnotation === annotation.id ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="bg-solana-dark border-solana-dark-lighter text-white min-h-[80px] text-sm"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => setEditingAnnotation(null)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="h-7 text-xs bg-solana-primary hover:bg-solana-primary-dark"
-                      onClick={() => updateAnnotation(annotation.id)}
-                    >
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-sm text-gray-300">
-                    {annotation.content}
-                  </div>
-                  
-                  {(annotation.referencedNodeAddress || annotation.referencedTransactionSignature) && (
-                    <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-                      <MapPin className="h-3 w-3" />
-                      {annotation.referencedNodeAddress ? (
-                        <span>Wallet: {annotation.referencedNodeAddress.slice(0, 4)}...{annotation.referencedNodeAddress.slice(-4)}</span>
-                      ) : (
-                        <span>Transaction: {annotation.referencedTransactionSignature.slice(0, 4)}...{annotation.referencedTransactionSignature.slice(-4)}</span>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[10px] text-gray-400 hover:text-white"
-                      onClick={() => {
-                        setEditingAnnotation(annotation.id);
-                        setEditContent(annotation.content);
-                      }}
-                    >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[10px] text-gray-400 hover:text-white"
-                      onClick={() => deleteAnnotation(annotation.id)}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </>
-              )}
-              
-              {/* Replies */}
-              {annotation.replies && annotation.replies.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-solana-dark space-y-3">
-                  {annotation.replies.map((reply) => (
-                    <div key={reply.id} className="pl-3 border-l-2 border-solana-dark">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-5 w-5">
-                            {reply.profilePicture ? (
-                              <AvatarImage src={reply.profilePicture} alt={reply.username} />
-                            ) : (
-                              <AvatarFallback className="text-[8px]">{getInitials(reply.username)}</AvatarFallback>
-                            )}
-                          </Avatar>
-                          <div>
-                            <div className="text-xs font-medium text-white">{reply.username}</div>
-                            <div className="text-[10px] text-gray-400">{formatTime(reply.createdAt)}</div>
-                          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+        <div>
+          <h3 className="text-xl font-semibold text-white">Annotations</h3>
+          <p className="text-gray-400 text-sm">Add notes and comments to specific elements in the visualization</p>
+        </div>
+        
+        <Badge variant="outline" className="mt-2 md:mt-0">
+          {displayAnnotations.length} {displayAnnotations.length === 1 ? "annotation" : "annotations"}
+        </Badge>
+      </div>
+      
+      {/* Annotation Tabs */}
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="bg-solana-dark mb-4">
+          <TabsTrigger value="all" className="data-[state=active]:bg-solana-primary">
+            All Annotations
+          </TabsTrigger>
+          <TabsTrigger 
+            value="wallet" 
+            disabled={!selectedNodeAddress}
+            className="data-[state=active]:bg-solana-primary"
+          >
+            Selected Wallet
+          </TabsTrigger>
+          <TabsTrigger 
+            value="transaction" 
+            disabled={!selectedTransactionSignature}
+            className="data-[state=active]:bg-solana-primary"
+          >
+            Selected Transaction
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
+      {/* New Annotation Form */}
+      <Card className="bg-solana-dark border-none">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-medium">Add Annotation</CardTitle>
+          <CardDescription>
+            {selectedNodeAddress 
+              ? `Adding note to wallet: ${formatAddress(selectedNodeAddress)}` 
+              : selectedTransactionSignature 
+                ? `Adding note to transaction: ${formatAddress(selectedTransactionSignature)}`
+                : "Adding note to the entire visualization"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Add your annotation or analysis..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end gap-2">
+          <Button 
+            onClick={handleAddAnnotation} 
+            disabled={!commentText.trim()}
+            className="flex items-center gap-2"
+          >
+            <PenSquare size={14} />
+            <span>Add Annotation</span>
+          </Button>
+        </CardFooter>
+      </Card>
+      
+      {/* Annotations List */}
+      <div className="space-y-4">
+        <h4 className="text-lg font-medium text-white">
+          {activeTab === "all" 
+            ? "All Annotations" 
+            : activeTab === "wallet" 
+              ? `Annotations for ${formatAddress(selectedNodeAddress || "")}` 
+              : `Annotations for Transaction ${formatAddress(selectedTransactionSignature || "")}`}
+        </h4>
+        
+        {isLoadingAnnotations ? (
+          <div className="flex justify-center py-8">
+            <div className="w-8 h-8 rounded-full border-2 border-solana-primary border-t-transparent animate-spin"></div>
+          </div>
+        ) : filteredAnnotations.length === 0 ? (
+          <div className="text-center py-8 bg-solana-dark rounded-lg">
+            <MessageSquare className="h-12 w-12 mx-auto text-gray-500 mb-4" />
+            <h4 className="text-lg font-medium text-white mb-2">No annotations yet</h4>
+            <p className="text-gray-400">
+              Be the first to add an annotation to this {
+                activeTab === "wallet" ? "wallet" : activeTab === "transaction" ? "transaction" : "visualization"
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredAnnotations.map((annotation: Comment) => (
+              <Card key={annotation.id} className="bg-solana-dark border-none">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {annotation.username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{annotation.username}</div>
+                        <div className="text-xs text-gray-400">
+                          {new Date(annotation.createdAt).toLocaleString()}
+                          {annotation.updatedAt && " (edited)"}
                         </div>
                       </div>
-                      <div className="text-xs text-gray-300 mt-1">
-                        {reply.content}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {(annotation.referencedNodeAddress || annotation.referencedTransactionSignature) && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => highlightReference(annotation)}
+                          className="h-8 text-xs"
+                        >
+                          {getTargetLabel(annotation)}
+                        </Button>
+                      )}
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleEdit(annotation)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setShowConfirmDelete(annotation.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {editingCommentId === annotation.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="min-h-[100px]"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingCommentId(null)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={() => handleSaveEdit(annotation.id)}
+                          disabled={!editText.trim()}
+                        >
+                          Save Changes
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Reply input */}
-              <div className="mt-2 pt-2 border-t border-solana-dark">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Reply to this annotation..."
-                    className="w-full bg-solana-dark border-solana-dark-lighter text-white text-xs rounded-md py-1 px-2"
-                  />
-                  <Button
-                    size="sm"
-                    className="absolute right-1 top-1 h-5 px-2 bg-solana-primary hover:bg-solana-primary-dark text-white text-[10px]"
-                  >
-                    Reply
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      ))}
-      
-      {/* Add annotation button */}
-      <Button
-        className="fixed bottom-4 right-4 bg-solana-primary hover:bg-solana-primary-dark text-white z-10"
-        onClick={() => setShowAnnotationModal(true)}
-      >
-        <PlusCircle className="h-4 w-4 mr-2" />
-        Add Annotation
-      </Button>
-      
-      {/* Add annotation modal */}
-      {showAnnotationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-solana-dark-light rounded-lg p-4 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-white">Add Annotation</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-white"
-                onClick={() => setShowAnnotationModal(false)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Comment</label>
-                <Textarea
-                  value={newAnnotation}
-                  onChange={(e) => setNewAnnotation(e.target.value)}
-                  placeholder="Add your annotation here..."
-                  className="bg-solana-dark border-solana-dark-lighter text-white min-h-[100px]"
-                />
-              </div>
-              
-              {(selectedNodeAddress || selectedTransactionSignature) && (
-                <div className="bg-solana-dark p-2 rounded-md">
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <MapPin className="h-4 w-4 text-solana-secondary" />
-                    {selectedNodeAddress ? (
-                      <span>Referencing wallet: {selectedNodeAddress.slice(0, 6)}...{selectedNodeAddress.slice(-6)}</span>
-                    ) : (
-                      <span>Referencing transaction: {selectedTransactionSignature.slice(0, 6)}...{selectedTransactionSignature.slice(-6)}</span>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAnnotationModal(false)}
-                  className="border-solana-dark-lighter text-gray-300"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={addAnnotation}
-                  disabled={!newAnnotation.trim()}
-                  className="bg-solana-primary text-white hover:bg-solana-primary-dark"
-                >
-                  Add Annotation
-                </Button>
-              </div>
-            </div>
+                  ) : (
+                    <p className="text-gray-200 whitespace-pre-wrap">{annotation.content}</p>
+                  )}
+                </CardContent>
+                <CardFooter className="flex flex-col items-start">
+                  {/* Replies */}
+                  {annotation.replies && annotation.replies.length > 0 && (
+                    <div className="w-full space-y-3 mt-2 mb-4 border-l-2 border-gray-700 pl-4">
+                      {annotation.replies.map((reply) => (
+                        <div key={reply.id} className="bg-solana-dark-light rounded-md p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback>
+                                  {reply.username.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium text-sm">{reply.username}</div>
+                                <div className="text-xs text-gray-400">
+                                  {new Date(reply.createdAt).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-6 w-6 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(reply)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setShowConfirmDelete(reply.id)}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          
+                          {editingCommentId === reply.id ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                className="min-h-[60px]"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setEditingCommentId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  onClick={() => handleSaveEdit(reply.id)}
+                                  disabled={!editText.trim()}
+                                >
+                                  Save Changes
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-200">{reply.content}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Reply Form */}
+                  {replyingTo === annotation.id ? (
+                    <div className="w-full space-y-2">
+                      <Textarea
+                        placeholder="Write your reply..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setReplyingTo(null);
+                            setReplyText("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={() => handleReply(annotation.id)}
+                          disabled={!replyText.trim()}
+                          className="flex items-center gap-1.5"
+                        >
+                          <SendHorizontal size={12} />
+                          Reply
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setReplyingTo(annotation.id)}
+                      className="mt-2"
+                    >
+                      <Reply className="h-4 w-4 mr-2" />
+                      Reply
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showConfirmDelete !== null} onOpenChange={() => setShowConfirmDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this annotation? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => handleDelete(showConfirmDelete!)}
+              className="flex items-center gap-1.5"
+            >
+              <Trash2 size={14} />
+              Delete Annotation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

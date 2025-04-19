@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, RefObject } from "react";
 import { useVisualization } from "@/hooks/useVisualization";
 import { VisualizationGraph, WalletNode, TransactionEdge } from "@/types/solana";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,7 @@ interface FlowVisualizationProps {
   selectedNode?: WalletNode | null;
   selectedEdge?: TransactionEdge | null;
   filteredWalletAddress?: string | null;
+  svgRef?: RefObject<SVGSVGElement>;
 }
 
 export default function FlowVisualization({
@@ -23,9 +24,11 @@ export default function FlowVisualization({
   onEdgeClick,
   selectedNode,
   selectedEdge,
-  filteredWalletAddress
+  filteredWalletAddress,
+  svgRef
 }: FlowVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const localSvgRef = useRef<SVGSVGElement>(null);
   const [layout, setLayout] = useState<"force" | "radial" | "hierarchy">("force");
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
