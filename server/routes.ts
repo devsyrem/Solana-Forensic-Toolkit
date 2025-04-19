@@ -360,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Solana data routes
+  // Solana data routes using Solscan API
   app.get("/api/solana/account/:address", async (req, res) => {
     try {
       const { address } = req.params;
@@ -373,17 +373,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid Solana address" });
       }
       
-      // Get account info
-      const accountInfo = await solanaConnection.getAccountInfo(publicKey);
-      const balance = await solanaConnection.getBalance(publicKey);
-      
-      return res.json({
-        address,
-        balance: balance / 10**9, // Convert lamports to SOL
-        executable: accountInfo?.executable || false,
-        owner: accountInfo?.owner?.toBase58() || null,
-      });
+      try {
+        // Import Solscan API service
+        const { getAccountInfo } = await import('./services/solscanAPI');
+        
+        // Get account info from Solscan
+        const solscanAccount = await getAccountInfo(address);
+        
+        // Format account info
+        const account = {
+          address,
+          balance: solscanAccount.lamports ? solscanAccount.lamports / 10**9 : 0, // Convert lamports to SOL
+          executable: solscanAccount.executable || false,
+          owner: solscanAccount.owner || null,
+          type: solscanAccount.type || 'account',
+          // Additional data available from Solscan
+          tokenInfo: solscanAccount.tokenInfo,
+          tokenAmount: solscanAccount.tokenAmount
+        };
+        
+        return res.json(account);
+      } catch (error) {
+        console.error("Error fetching account from Solscan:", error);
+        
+        // Fallback to basic account info
+        const accountInfo = await solanaConnection.getAccountInfo(publicKey);
+        const balance = await solanaConnection.getBalance(publicKey);
+        
+        return res.json({
+          address,
+          balance: balance / 10**9, // Convert lamports to SOL
+          executable: accountInfo?.executable || false,
+          owner: accountInfo?.owner?.toBase58() || null,
+        });
+      }
     } catch (error) {
+      console.error("Error fetching Solana account:", error);
       return res.status(500).json({ message: "Error fetching Solana account" });
     }
   });
@@ -489,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New endpoint: Get transaction details for a specific address (using different path)
+  // New endpoint: Get transaction details for a specific address using Solscan API
   app.get("/api/solana/address-transactions/:address", async (req, res) => {
     try {
       const { address } = req.params;
@@ -503,71 +528,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       try {
-        // Get transaction signatures for this address (limited to 10)
-        const signatures = await solanaConnection.getSignaturesForAddress(publicKey, { limit: 10 });
+        // Import Solscan API service
+        const { getAllTransactionsForAddress, checkSolscanApiStatus } = await import('./services/solscanAPI');
         
-        if (!signatures || signatures.length === 0) {
-          console.log(`No signatures found for address: ${address}`);
-          // Generate sample data for visualization - since we can't access history from RPC
+        // Check if Solscan API is available and our key is valid
+        const apiStatus = await checkSolscanApiStatus();
+        
+        if (apiStatus.status !== 'ok' || !apiStatus.hasValidKey) {
+          console.log(`Solscan API not available or invalid key: ${JSON.stringify(apiStatus)}`);
+          
+          // Generate sample data for visualization as fallback
           const sampleTransactionData = generateSampleTransactionData(address);
           return res.json(sampleTransactionData);
         }
         
-        // Get transaction details for each signature
-        const transactionDetails = await Promise.all(
-          signatures.map(async (sig) => {
-            try {
-              const tx = await solanaConnection.getTransaction(sig.signature, {
-                maxSupportedTransactionVersion: 0,
-              });
-              
-              if (!tx) return null;
-              
-              // Use getAccountKeys() for versioned transactions
-              const accountKeys = tx.transaction.message.staticAccountKeys || 
-                              tx.transaction.message.getAccountKeys?.().keySegments().flat() || [];
-              
-              // Handle instructions for both legacy and versioned transactions
-              const instructions = 'instructions' in tx.transaction.message ?
-                tx.transaction.message.instructions :
-                [];
-                
-              return {
-                signature: sig.signature,
-                blockTime: tx.blockTime,
-                slot: tx.slot,
-                fee: tx.meta?.fee || 0,
-                status: tx.meta?.err ? 'failed' : 'success',
-                instructions: instructions.map((ix: any) => ({
-                  programId: accountKeys[ix.programIdIndex]?.toBase58() || '',
-                  accounts: ix.accounts.map((acc: number) => 
-                    accountKeys[acc]?.toBase58() || ''
-                  ),
-                  data: ix.data
-                })),
-                accountKeys: accountKeys.map(key => key?.toBase58() || '')
-              };
-            } catch (error) {
-              console.error(`Error fetching transaction details for signature ${sig.signature}:`, error);
-              return null;
-            }
-          })
-        );
+        // Fetch transactions using Solscan API (limit to 10)
+        const transactions = await getAllTransactionsForAddress(address, 10);
         
-        // Filter out null values (failed transactions)
-        const validTransactions = transactionDetails.filter(tx => tx !== null);
-        
-        if (validTransactions.length === 0) {
-          console.log(`No valid transactions found for address: ${address}`);
+        if (!transactions || transactions.length === 0) {
+          console.log(`No transactions found via Solscan API for address: ${address}`);
+          
           // Generate sample data for visualization
           const sampleTransactionData = generateSampleTransactionData(address);
           return res.json(sampleTransactionData);
         }
         
-        return res.json(validTransactions);
+        console.log(`Successfully fetched ${transactions.length} transactions from Solscan API`);
+        return res.json(transactions);
       } catch (error) {
-        console.error("Error fetching transaction signatures:", error);
-        console.log("Using sample transaction data for visualization demo");
+        console.error("Error fetching from Solscan API:", error);
+        console.log("Using sample transaction data as fallback");
         
         // Generate sample data for visualization
         const sampleTransactionData = generateSampleTransactionData(address);
@@ -751,12 +741,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add a heartbeat endpoint to check server status
-  app.get("/api/health", (req, res) => {
-    return res.json({ 
-      status: "ok", 
-      timestamp: new Date().toISOString(),
-      solana: "default"
-    });
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Check Solscan API status
+      const { checkSolscanApiStatus } = await import('./services/solscanAPI');
+      const solscanStatus = await checkSolscanApiStatus();
+      
+      return res.json({ 
+        status: "ok", 
+        timestamp: new Date().toISOString(),
+        solana: "default",
+        solscan: solscanStatus
+      });
+    } catch (error) {
+      return res.json({ 
+        status: "ok", 
+        timestamp: new Date().toISOString(),
+        solana: "default",
+        solscan: { status: "error", message: "Failed to check Solscan API status" }
+      });
+    }
   });
   
   // Serve static HTML file for direct access - Multiple entry points for better accessibility
