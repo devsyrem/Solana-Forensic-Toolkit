@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>SolFlow - Transaction Flow Visualization</title>
     <!-- D3.js for visualization -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -576,9 +579,9 @@
                 const walletData = await walletResponse.json();
                 log(`Found wallet with balance: ${walletData.balance} SOL`);
                 
-                // Then get transactions
+                // Then get transactions using the direct Solana RPC endpoint
                 const txLimit = $('node-limit').value || 30;
-                const txResponse = await fetch(`/api/solana/transactions/${address}?limit=${txLimit}`);
+                const txResponse = await fetch(`/api/solana/address-transactions/${address}?limit=${txLimit}`);
                 
                 if (!txResponse.ok) {
                     throw new Error(`Error fetching transactions: ${txResponse.status}`);
