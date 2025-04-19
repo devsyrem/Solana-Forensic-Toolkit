@@ -389,6 +389,10 @@
                         <input type="checkbox" id="highlight-critical" checked>
                         <label for="highlight-critical">Highlight Critical Paths</label>
                     </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="critical-only">
+                        <label for="critical-only">Show Only Critical Paths</label>
+                    </div>
                 </div>
                 
                 <div class="button-group">
@@ -1193,6 +1197,7 @@
             $('node-limit').value = 30;
             $('layout-type').value = 'force';
             $('highlight-critical').checked = true;
+            $('critical-only').checked = false;
             
             // Apply the reset filters
             applyFilters();
