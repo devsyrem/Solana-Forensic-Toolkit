@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +21,7 @@ export default function Home() {
     }
 
     setError("");
+    // Navigate to the visualization page with the wallet address
     window.location.href = `/visualization/${walletAddress}`;
   };
 
@@ -152,11 +152,12 @@ export default function Home() {
       {/* CTA Section */}
       <section className="text-center py-12">
         <h2 className="text-3xl font-bold mb-6">Ready to Explore Solana Transactions?</h2>
-        <Link href="/visualization">
-          <Button className="bg-solana-secondary text-solana-dark hover:bg-opacity-90 font-bold py-3 px-8 rounded-md text-lg transition">
-            Start Visualizing
-          </Button>
-        </Link>
+        <Button 
+          className="bg-solana-secondary text-solana-dark hover:bg-opacity-90 font-bold py-3 px-8 rounded-md text-lg transition"
+          onClick={() => window.location.href = "/visualization"}
+        >
+          Start Visualizing
+        </Button>
       </section>
     </div>
   );
