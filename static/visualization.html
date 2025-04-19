@@ -1072,8 +1072,15 @@
             const selectedTypes = Array.from(document.querySelectorAll('#transaction-types input:checked'))
                 .map(input => input.value);
             
-            // Should we highlight critical paths?
+            // Should we focus on critical paths?
             const highlightCritical = $('highlight-critical').checked;
+            const criticalOnly = $('critical-only').checked;
+
+            // Log the filter settings
+            log(`Filtering - Date: ${startDate?.toDateString() || 'Any'} to ${endDate?.toDateString() || 'Any'}, ` +
+                `Amount: ${minAmount} to ${maxAmount === Infinity ? 'Any' : maxAmount}, ` +
+                `Types: ${selectedTypes.join(', ')}, ` +
+                `Critical: ${highlightCritical ? 'Highlight' : 'Normal'}${criticalOnly ? ' (Only showing critical)' : ''}`);
             
             // Filter the edges
             const filteredEdges = graph.edges.filter(edge => {
@@ -1087,16 +1094,39 @@
                                      (isNaN(maxAmount) || edge.amount <= maxAmount);
                 
                 // Filter by type
-                const typeMatches = selectedTypes.includes(edge.type);
+                // If no types are selected or the array includes "all", show all types
+                const typeMatches = selectedTypes.length === 0 || 
+                                   selectedTypes.includes('all') || 
+                                   selectedTypes.includes(edge.type);
                 
-                return dateInRange && amountInRange && typeMatches;
+                // Filter by critical path
+                const criticalMatches = !criticalOnly || edge.isCritical;
+                
+                return dateInRange && amountInRange && typeMatches && criticalMatches;
             });
             
             // Get all node IDs that have connections in the filtered edges
             const connectedNodeIds = new Set();
             filteredEdges.forEach(edge => {
-                connectedNodeIds.add(edge.source.id || edge.source);
-                connectedNodeIds.add(edge.target.id || edge.target);
+                // Handle both string IDs and object references
+                if (typeof edge.source === 'object') {
+                    connectedNodeIds.add(edge.source.id);
+                } else {
+                    connectedNodeIds.add(edge.source);
+                }
+                
+                if (typeof edge.target === 'object') {
+                    connectedNodeIds.add(edge.target.id);
+                } else {
+                    connectedNodeIds.add(edge.target);
+                }
+            });
+            
+            // Always include the main wallet node
+            graph.nodes.forEach(node => {
+                if (node.isMain) {
+                    connectedNodeIds.add(node.id);
+                }
             });
             
             // Filter the nodes
@@ -1115,19 +1145,22 @@
             
             // Update visibility of nodes and links
             g.selectAll('.node')
-                .attr('display', d => connectedNodeIds.has(d.id) ? 'inline' : 'none');
+                .style('display', d => connectedNodeIds.has(d.id) ? null : 'none');
             
             g.selectAll('text')
-                .attr('display', d => connectedNodeIds.has(d.id) ? 'inline' : 'none');
+                .style('display', d => connectedNodeIds.has(d.id) ? null : 'none');
             
             g.selectAll('.link')
-                .attr('display', d => {
-                    const sourceId = d.source.id || d.source;
-                    const targetId = d.target.id || d.target;
-                    return filteredEdges.some(e => 
-                        (e.source.id || e.source) === sourceId && 
-                        (e.target.id || e.target) === targetId
-                    ) ? 'inline' : 'none';
+                .style('display', d => {
+                    const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                    const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                    
+                    return filteredEdges.some(e => {
+                        const eSourceId = typeof e.source === 'object' ? e.source.id : e.source;
+                        const eTargetId = typeof e.target === 'object' ? e.target.id : e.target;
+                        
+                        return eSourceId === sourceId && eTargetId === targetId;
+                    }) ? null : 'none';
                 });
             
             // Update status
