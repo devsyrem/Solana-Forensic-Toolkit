@@ -912,8 +912,8 @@ Solana Forensic Toolkit is available under the MIT License. See the LICENSE file
 
 ## Acknowledgments
 
-Solana Forensic Toolkit was made possible through collaboration with blockchain investigators, compliance professionals, and the open-source community. Special thanks to the Solana ecosystem for providing robust blockchain infrastructure that makes this analysis possible.
+Solana Forensic Toolkit was made possible through the extensive research done by Syrem, Founder of ChainLabs Technologies.
 
 ---
 
-This project represents a significant advancement in making blockchain analysis more accessible and collaborative, empowering users to gain deeper insights into on-chain activities on the Solana network.# Solana-Forensic-Toolkit
+**CLASSIFIED CONTENT**
