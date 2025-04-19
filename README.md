@@ -615,45 +615,187 @@ The application processes Solana transactions in several steps:
 
 ## Dependencies
 
-SolFlow relies on numerous dependencies to provide its functionality:
+SolFlow relies on numerous dependencies to provide its functionality. Below is a detailed breakdown of the key dependencies and how they contribute to the application:
 
 ### Core Frontend Dependencies
 
-- **@tanstack/react-query**: Data fetching, caching, and synchronization library that simplifies API interactions
-- **d3**: Powerful visualization library used for creating the interactive graph visualizations
-- **react-hook-form**: Form management library that handles form state, validation, and submission
-- **zod**: TypeScript-first schema validation library used for form and API payload validation
-- **wouter**: Lightweight routing library for navigation between application sections
-- **tailwindcss**: Utility-first CSS framework for responsive, customized designs
+- **@tanstack/react-query (v5.x)**: 
+  - Purpose: Advanced data fetching, caching, and state management
+  - Features: Automatic revalidation, background fetching, pagination support, optimistic updates
+  - Why it's used: Provides a robust solution for handling server state in React components with built-in caching, retry logic, and deduplication of requests
+  - Usage in SolFlow: Used for all API requests to fetch wallet data, transactions, and user information
+
+- **d3 (v7.x)**: 
+  - Purpose: Data visualization library for creating complex, interactive graphics
+  - Features: Wide range of visualization primitives, transitions, animations, force simulations
+  - Why it's used: Industry standard for creating custom, interactive data visualizations with fine-grained control
+  - Usage in SolFlow: Powers the transaction flow visualization with force-directed layouts, zoom/pan capabilities, and interactive elements
+
+- **react-hook-form (v7.x)**: 
+  - Purpose: Form state management and validation
+  - Features: Performance-optimized form handling, validation, error management
+  - Why it's used: Reduces re-renders and provides a simple API for complex form logic
+  - Usage in SolFlow: Handles all forms including user registration, team creation, and visualization filtering
+
+- **zod (v3.x)**: 
+  - Purpose: TypeScript-first schema validation
+  - Features: Runtime type checking, error handling, TypeScript integration
+  - Why it's used: Provides both runtime validation and static type inference
+  - Usage in SolFlow: Validates form inputs, API payloads, and ensures type safety throughout the application
+
+- **wouter (v2.x)**: 
+  - Purpose: Client-side routing
+  - Features: Lightweight (1.3kB), hook-based API, path pattern matching
+  - Why it's used: Simple alternative to React Router with minimal footprint
+  - Usage in SolFlow: Handles navigation between application pages and maintains URL state
+
+- **tailwindcss (v3.x)**: 
+  - Purpose: Utility-first CSS framework
+  - Features: Responsive design utilities, dark mode support, customization options
+  - Why it's used: Accelerates UI development with composable utility classes
+  - Usage in SolFlow: Primary styling solution for all UI components
 
 ### UI Component Libraries
 
-- **@radix-ui/react-***: Low-level UI primitives for accessible, composable components
-- **class-variance-authority**: Utility for creating type-safe UI component variants
-- **shadcn/ui**: High-quality UI components built on Radix UI primitives
-- **lucide-react**: Icon library providing consistent, customizable SVG icons
-- **tailwindcss-animate**: Animation utilities for Tailwind CSS
+- **@radix-ui/react-* (various)**: 
+  - Purpose: Unstyled, accessible UI primitives
+  - Features: Keyboard navigation, ARIA attributes, focus management
+  - Why it's used: Provides accessibility-first building blocks for UI components
+  - Usage in SolFlow: Foundation for custom UI components including dialogs, dropdowns, and tabs
+
+- **class-variance-authority (v0.7.x)**: 
+  - Purpose: Building type-safe UI components with variants
+  - Features: Type-safe variant API, conditional class application
+  - Why it's used: Simplifies creating components with multiple variants and states
+  - Usage in SolFlow: Used to create customizable UI components with consistent API
+
+- **shadcn/ui**: 
+  - Purpose: Collection of reusable UI components
+  - Features: Built on Radix UI, styled with Tailwind CSS, fully customizable
+  - Why it's used: Provides high-quality, accessible components without the constraints of a component library
+  - Usage in SolFlow: Used for UI elements like buttons, cards, modals, and form inputs
+
+- **lucide-react (v0.284.x)**: 
+  - Purpose: Icon library for React
+  - Features: 1000+ icons, customizable size/color, consistent design
+  - Why it's used: Provides a comprehensive set of well-designed icons
+  - Usage in SolFlow: Used for all icons throughout the interface for actions, navigation, and visual cues
+
+- **tailwindcss-animate (v1.0.x)**: 
+  - Purpose: Animation utilities for Tailwind CSS
+  - Features: Transition, animation, and transform utilities
+  - Why it's used: Extends Tailwind with animation capabilities
+  - Usage in SolFlow: Used for micro-interactions, loading states, and UI transitions
 
 ### Backend Dependencies
 
-- **express**: Web framework for Node.js used to create the API server
-- **express-session**: Session middleware for Express applications
-- **passport**: Authentication middleware for Node.js
-- **@solana/web3.js**: Solana JavaScript API for interacting with the Solana blockchain
-- **drizzle-orm**: TypeScript ORM for database operations
-- **@neondatabase/serverless**: PostgreSQL client for serverless environments
+- **express (v4.x)**: 
+  - Purpose: Web application framework for Node.js
+  - Features: Routing, middleware, HTTP utilities
+  - Why it's used: Industry standard for building robust Node.js web servers
+  - Usage in SolFlow: Powers the API server with route handling and middleware
+
+- **express-session (v1.17.x)**: 
+  - Purpose: Session middleware for Express
+  - Features: Session creation, storage, and management
+  - Why it's used: Provides secure session handling capabilities
+  - Usage in SolFlow: Manages user authentication sessions
+
+- **passport (v0.6.x)**: 
+  - Purpose: Authentication middleware for Node.js
+  - Features: Flexible authentication strategies, session integration
+  - Why it's used: Standardized approach to authentication with various strategies
+  - Usage in SolFlow: Handles user authentication with local strategy (username/password)
+
+- **bcryptjs (v2.4.x)**: 
+  - Purpose: Password hashing library
+  - Features: Secure password hashing, salting, and comparison
+  - Why it's used: Industry standard for secure password storage
+  - Usage in SolFlow: Securely stores user passwords in the database
+
+- **@solana/web3.js (v1.87.x)**: 
+  - Purpose: JavaScript API for Solana blockchain
+  - Features: Transaction creation, account management, RPC methods
+  - Why it's used: Official library for interacting with Solana
+  - Usage in SolFlow: Fetches transaction data, account information, and other blockchain data
+
+- **drizzle-orm (v0.29.x)**: 
+  - Purpose: TypeScript ORM for SQL databases
+  - Features: Type-safe queries, migrations, relations
+  - Why it's used: Modern, lightweight ORM with excellent TypeScript support
+  - Usage in SolFlow: Handles all database operations with type safety
+
+- **@neondatabase/serverless (v0.6.x)**: 
+  - Purpose: PostgreSQL client for serverless environments
+  - Features: Connection pooling, WebSocket transport, prepared statements
+  - Why it's used: Optimized for serverless deployments with efficient connections
+  - Usage in SolFlow: Connects to Neon PostgreSQL database for all data storage
 
 ### Real-time Collaboration
 
-- **ws**: WebSocket implementation for Node.js
-- **memorystore**: Memory-backed session store implementation
+- **ws (v8.14.x)**: 
+  - Purpose: WebSocket implementation for Node.js
+  - Features: RFC-6455 compliant, high performance, minimal abstractions
+  - Why it's used: Mature, stable WebSocket server implementation
+  - Usage in SolFlow: Enables real-time communication for collaborative features
+
+- **memorystore (v1.6.x)**: 
+  - Purpose: Memory-backed session store for Express
+  - Features: Session expiration, memory usage limiting
+  - Why it's used: Simple session storage solution with automatic cleanup
+  - Usage in SolFlow: Stores session data with TTL for authentication
 
 ### Development Tools
 
-- **typescript**: Typed JavaScript language that compiles to JavaScript
-- **vite**: Build tool and development server
-- **drizzle-kit**: CLI tools for Drizzle ORM
-- **tsx**: TypeScript execution environment
+- **typescript (v5.2.x)**: 
+  - Purpose: Typed superset of JavaScript
+  - Features: Static typing, modern JavaScript features, tooling integration
+  - Why it's used: Enhances code quality and developer experience
+  - Usage in SolFlow: Used throughout the codebase for type safety
+
+- **vite (v4.4.x)**: 
+  - Purpose: Frontend build tool and development server
+  - Features: HMR, ESM, optimized builds, plugin architecture
+  - Why it's used: Significantly faster than traditional bundlers
+  - Usage in SolFlow: Development server and production build tool
+
+- **drizzle-kit (v0.20.x)**: 
+  - Purpose: CLI tools for Drizzle ORM
+  - Features: Migration generation, schema pushing, database introspection
+  - Why it's used: Companion tool for Drizzle ORM
+  - Usage in SolFlow: Manages database schema migrations and updates
+
+- **tsx (v3.13.x)**: 
+  - Purpose: TypeScript execution environment
+  - Features: Fast compilation, ESM support, watch mode
+  - Why it's used: Allows direct execution of TypeScript files
+  - Usage in SolFlow: Runs the backend server during development
+
+### Additional Utilities
+
+- **date-fns (v2.30.x)**: 
+  - Purpose: JavaScript date utility library
+  - Features: Date manipulation, formatting, parsing
+  - Why it's used: Modular design with tree-shaking support
+  - Usage in SolFlow: Handles all date and time operations in the application
+
+- **nanoid (v4.0.x)**: 
+  - Purpose: Unique ID generator
+  - Features: Secure, URL-friendly, small footprint
+  - Why it's used: More compact and secure than UUID
+  - Usage in SolFlow: Generates unique identifiers for entities without database IDs
+
+- **clsx (v2.0.x)**: 
+  - Purpose: Conditional class name builder
+  - Features: Small footprint, supports various input types
+  - Why it's used: Simplifies conditional class application
+  - Usage in SolFlow: Used to conditionally apply CSS classes throughout the UI
+
+- **recharts (v2.8.x)**: 
+  - Purpose: Charting library for React
+  - Features: Responsive charts, customizable components, animation
+  - Why it's used: Built on D3 with React component API
+  - Usage in SolFlow: Creates statistical charts for wallet transaction analysis
 
 ## Performance Optimizations
 
