@@ -1,17 +1,44 @@
 import fetch from 'node-fetch';
 import { log } from '../vite';
 
-const SOLSCAN_API_BASE = 'https://api.solscan.io/v1';
+const SOLSCAN_API_BASE = 'https://public-api.solscan.io/v1';
 const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
+const FETCH_TIMEOUT = 10000; // 10 seconds timeout
+
+// Custom timeout utility for node-fetch v2
+const fetchWithTimeout = (url: string, options: RequestInit) => {
+  return new Promise<Response>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`Request timed out for URL: ${url}`));
+    }, FETCH_TIMEOUT);
+    
+    fetch(url, options)
+      .then(response => {
+        clearTimeout(timeout);
+        resolve(response);
+      })
+      .catch(error => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+  });
+};
 
 // Function to fetch account information from Solscan
 export async function getAccountInfo(address: string) {
   try {
-    const response = await fetch(`${SOLSCAN_API_BASE}/account/${address}`, {
+    // Build URL with query parameters
+    const url = new URL(`${SOLSCAN_API_BASE}/account`);
+    url.searchParams.append('address', address);
+
+    const response = await fetchWithTimeout(url.toString(), {
+      method: 'GET',
       headers: {
         'accept': 'application/json',
-        'token': SOLSCAN_API_KEY || ''
-      }
+        'token': SOLSCAN_API_KEY || '',
+        'user-agent': 'SolFlow Analytics App'
+      },
+      redirect: 'follow'
     });
 
     if (!response.ok) {
@@ -20,7 +47,7 @@ export async function getAccountInfo(address: string) {
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     log(`Error fetching account info from Solscan: ${error.message}`, 'solscan');
     throw error;
   }
@@ -29,16 +56,23 @@ export async function getAccountInfo(address: string) {
 // Function to fetch transaction signatures for an address
 export async function getTransactionSignatures(address: string, limit: number = 10, before?: string) {
   try {
-    let url = `${SOLSCAN_API_BASE}/account/transactions?account=${address}&limit=${limit}`;
+    // Build URL with query parameters
+    const url = new URL(`${SOLSCAN_API_BASE}/account/transactions`);
+    url.searchParams.append('address', address);
+    url.searchParams.append('limit', limit.toString());
+    
     if (before) {
-      url += `&beforeHash=${before}`;
+      url.searchParams.append('beforeSignature', before);
     }
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url.toString(), {
+      method: 'GET',
       headers: {
         'accept': 'application/json',
-        'token': SOLSCAN_API_KEY || ''
-      }
+        'token': SOLSCAN_API_KEY || '',
+        'user-agent': 'SolFlow Analytics App'
+      },
+      redirect: 'follow'
     });
 
     if (!response.ok) {
@@ -47,7 +81,7 @@ export async function getTransactionSignatures(address: string, limit: number = 
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     log(`Error fetching transaction signatures from Solscan: ${error.message}`, 'solscan');
     throw error;
   }
@@ -56,11 +90,18 @@ export async function getTransactionSignatures(address: string, limit: number = 
 // Function to fetch transaction details
 export async function getTransactionDetails(signature: string) {
   try {
-    const response = await fetch(`${SOLSCAN_API_BASE}/transaction/${signature}`, {
+    // Build URL with query parameters
+    const url = new URL(`${SOLSCAN_API_BASE}/transaction`);
+    url.searchParams.append('signature', signature);
+
+    const response = await fetchWithTimeout(url.toString(), {
+      method: 'GET',
       headers: {
         'accept': 'application/json',
-        'token': SOLSCAN_API_KEY || ''
-      }
+        'token': SOLSCAN_API_KEY || '',
+        'user-agent': 'SolFlow Analytics App'
+      },
+      redirect: 'follow'
     });
 
     if (!response.ok) {
@@ -69,7 +110,7 @@ export async function getTransactionDetails(signature: string) {
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     log(`Error fetching transaction details from Solscan: ${error.message}`, 'solscan');
     throw error;
   }
@@ -78,11 +119,18 @@ export async function getTransactionDetails(signature: string) {
 // Function to fetch token holdings
 export async function getTokenHoldings(address: string) {
   try {
-    const response = await fetch(`${SOLSCAN_API_BASE}/account/tokens?account=${address}`, {
+    // Build URL with query parameters
+    const url = new URL(`${SOLSCAN_API_BASE}/account/tokens`);
+    url.searchParams.append('address', address);
+
+    const response = await fetchWithTimeout(url.toString(), {
+      method: 'GET',
       headers: {
         'accept': 'application/json',
-        'token': SOLSCAN_API_KEY || ''
-      }
+        'token': SOLSCAN_API_KEY || '',
+        'user-agent': 'SolFlow Analytics App'
+      },
+      redirect: 'follow'
     });
 
     if (!response.ok) {
@@ -91,7 +139,7 @@ export async function getTokenHoldings(address: string) {
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     log(`Error fetching token holdings from Solscan: ${error.message}`, 'solscan');
     throw error;
   }
@@ -102,11 +150,19 @@ export async function checkSolscanApiStatus() {
   try {
     // Try to get a known account as a test
     const testAddress = 'So11111111111111111111111111111111111111112'; // SOL token address
-    const response = await fetch(`${SOLSCAN_API_BASE}/account/${testAddress}`, {
+    
+    // Build URL with query parameters
+    const url = new URL(`${SOLSCAN_API_BASE}/account`);
+    url.searchParams.append('address', testAddress);
+
+    const response = await fetchWithTimeout(url.toString(), {
+      method: 'GET',
       headers: {
         'accept': 'application/json',
-        'token': SOLSCAN_API_KEY || ''
-      }
+        'token': SOLSCAN_API_KEY || '',
+        'user-agent': 'SolFlow Analytics App'
+      },
+      redirect: 'follow'
     });
 
     if (!response.ok) {
@@ -124,9 +180,10 @@ export async function checkSolscanApiStatus() {
 
     return {
       status: 'ok',
-      hasValidKey
+      hasValidKey,
+      apiVersion: 'v1'
     };
-  } catch (error) {
+  } catch (error: any) {
     log(`Error checking Solscan API status: ${error.message}`, 'solscan');
     return {
       status: 'error',
@@ -154,7 +211,7 @@ export function formatSolscanTransaction(txData: any) {
       })),
       accountKeys: txData.accounts || []
     };
-  } catch (error) {
+  } catch (error: any) {
     log(`Error formatting Solscan transaction: ${error.message}`, 'solscan');
     return null;
   }
@@ -179,7 +236,7 @@ export async function getAllTransactionsForAddress(address: string, limit: numbe
         try {
           const txData = await getTransactionDetails(signature);
           return formatSolscanTransaction(txData);
-        } catch (error) {
+        } catch (error: any) {
           log(`Error fetching details for tx ${signature}: ${error.message}`, 'solscan');
           return null;
         }
@@ -188,7 +245,7 @@ export async function getAllTransactionsForAddress(address: string, limit: numbe
 
     // Filter out failed transactions
     return transactions.filter(tx => tx !== null);
-  } catch (error) {
+  } catch (error: any) {
     log(`Error in getAllTransactionsForAddress: ${error.message}`, 'solscan');
     throw error;
   }
