@@ -242,8 +242,10 @@ export function useSolanaData({
         balance: wallet.balance,
         transactionCount: transactions?.length || 0,
         lastActivity,
-        topInteractions,
-        connectedEntities: interactions.size, // Changed from connectedWallets to match type definition
+        transactionVolume: 0, // Required field
+        risk: 0, // Required field
+        label: `Wallet ${mainAddress.substring(0, 6)}...`,
+        type: 'user-wallet'
       });
     }
     
@@ -294,9 +296,11 @@ export function useSolanaData({
         id: 'exchange-cluster',
         name: 'Exchange Cluster',
         type: 'exchange',
-        count: exchangeAddresses.size, // Changed from walletCount to count
+        addresses: Array.from(exchangeAddresses),
+        totalVolume: 0,
+        transactionCount: exchangeAddresses.size * 5, // Estimate
         description: 'Likely associated with a centralized exchange',
-        addresses: Array.from(exchangeAddresses) // Changed from wallets to addresses
+        confidence: 0.8
       });
     }
     
@@ -304,10 +308,12 @@ export function useSolanaData({
       clusters.push({
         id: 'related-wallets',
         name: 'Related Wallets',
-        type: 'wallet', // Changed from 'related' to 'wallet' to match valid type
-        count: relatedAddresses.size,
+        type: 'wallet', 
+        addresses: Array.from(relatedAddresses),
+        totalVolume: 0,
+        transactionCount: relatedAddresses.size * 3, // Estimate
         description: 'Likely controlled by the same entity',
-        addresses: Array.from(relatedAddresses)
+        confidence: 0.7
       });
     }
     
@@ -315,10 +321,12 @@ export function useSolanaData({
       clusters.push({
         id: 'defi-interaction',
         name: 'DeFi Interaction',
-        type: 'dex', // Changed from 'defi' to 'dex' to match valid type
-        count: defiAddresses.size,
+        type: 'dex',
+        addresses: Array.from(defiAddresses),
+        totalVolume: 0,
+        transactionCount: defiAddresses.size * 4, // Estimate
         description: 'Protocols this wallet interacts with',
-        addresses: Array.from(defiAddresses)
+        confidence: 0.6
       });
     }
     
