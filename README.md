@@ -1,4 +1,4 @@
-# SolFlow: Solana Transaction Flow Visualization & Analysis Platform
+# Solana Forensic Toolkit: Solana Transaction Flow Visualization & Analysis Platform
 
 ## Table of Contents
 - [Overview](#overview)
