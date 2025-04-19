@@ -68,44 +68,40 @@ export function useSolanaData({
     enabled: !!address,
   });
 
-  // Fetch transaction details when we have transaction signatures
+  // Fetch transaction details directly for the address
   const {
     data: transactionDetails = [],
     isLoading: isLoadingDetails,
     error: detailsError,
   } = useQuery<any[]>({
-    queryKey: [`/api/solana/transaction/details/${address}`],
-    enabled: !!transactions && transactions.length > 0,
+    queryKey: [`/api/solana/address-transactions/${address}`],
+    enabled: !!address && !!transactions && transactions.length > 0,
     queryFn: async () => {
       try {
+        // Direct API call to our new endpoint that fetches all transaction details at once
+        const response = await fetch(`/api/solana/address-transactions/${address}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch transaction details");
+        }
+        
+        const data = await response.json();
+        console.log("Fetched transaction details:", data);
+        
         // Filter out transactions we've already processed
-        const newTransactions = transactions.filter(
-          tx => !processedSignatures.has(tx.signature)
+        const newTransactions = data.filter(
+          (tx: any) => !processedSignatures.has(tx.signature)
         );
         
         if (newTransactions.length === 0) return [];
         
-        // Get transaction details for new transactions
-        const details = await Promise.all(
-          newTransactions.map(async (tx) => {
-            try {
-              return await solanaAPI.getTransactionDetail(tx.signature);
-            } catch (error) {
-              console.error(`Error fetching details for transaction ${tx.signature}:`, error);
-              return null; // Return null for failed transactions
-            }
-          })
-        );
-        
-        // Filter out null results from failed transactions
-        const validDetails = details.filter(detail => detail !== null);
-        
-        // Update processed signatures (even for failed transactions to avoid retrying)
+        // Update processed signatures
         const newSignatures = new Set(processedSignatures);
-        newTransactions.forEach(tx => newSignatures.add(tx.signature));
+        newTransactions.forEach((tx: any) => newSignatures.add(tx.signature));
         setProcessedSignatures(newSignatures);
         
-        return validDetails;
+        return newTransactions;
       } catch (error) {
         console.error("Error fetching transaction details:", error);
         return []; // Return empty array in case of error

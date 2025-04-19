@@ -489,8 +489,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New endpoint: Get transaction details for a specific address
-  app.get("/api/solana/transaction/details/:address", async (req, res) => {
+  // New endpoint: Get transaction details for a specific address (using different path)
+  app.get("/api/solana/address-transactions/:address", async (req, res) => {
     try {
       const { address } = req.params;
       
