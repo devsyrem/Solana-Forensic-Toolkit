@@ -8,18 +8,64 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  email: text("email"),
+  profilePicture: text("profile_picture"),
   createdAt: timestamp("created_at").defaultNow(),
+  lastLogin: timestamp("last_login"),
 });
-
-export const usersRelations = relations(users, ({ many }) => ({
-  wallets: many(wallets),
-  visualizations: many(visualizations),
-  trackedTransactions: many(transactionTracking),
-}));
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  email: true,
+});
+
+// Teams for collaborative analysis
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  ownerId: integer("owner_id").references(() => users.id).notNull(),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertTeamSchema = createInsertSchema(teams).pick({
+  name: true,
+  description: true,
+  ownerId: true,
+  avatarUrl: true,
+});
+
+// Team membership and roles
+export const teamMemberRoles = pgEnum("team_member_role", [
+  "owner",
+  "admin",
+  "editor",
+  "viewer"
+]);
+
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  role: teamMemberRoles("role").default("viewer"),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  invitedBy: integer("invited_by").references(() => users.id),
+  status: text("status").default("active"), // active, invited, inactive
+}, (table) => {
+  return {
+    uniqUserTeam: unique().on(table.userId, table.teamId),
+  };
+});
+
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).pick({
+  teamId: true,
+  userId: true,
+  role: true,
+  invitedBy: true,
+  status: true,
 });
 
 // Wallet model to store wallet data
@@ -45,16 +91,6 @@ export const wallets = pgTable("wallets", {
   category: text("category"),
   metadata: jsonb("metadata"),
 });
-
-export const walletsRelations = relations(wallets, ({ one, many }) => ({
-  user: one(users, {
-    fields: [wallets.userId],
-    references: [users.id],
-  }),
-  sourceTransactions: many(transactions, { relationName: "source" }),
-  destinationTransactions: many(transactions, { relationName: "destination" }),
-  entities: many(walletEntityRelations),
-}));
 
 export const insertWalletSchema = createInsertSchema(wallets).pick({
   address: true,
@@ -96,20 +132,6 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const transactionsRelations = relations(transactions, ({ one, many }) => ({
-  source: one(wallets, {
-    fields: [transactions.sourceAddress],
-    references: [wallets.address],
-    relationName: "source",
-  }),
-  destination: one(wallets, {
-    fields: [transactions.destinationAddress],
-    references: [wallets.address],
-    relationName: "destination",
-  }),
-  trackings: many(transactionTracking),
-}));
-
 export const insertTransactionSchema = createInsertSchema(transactions).pick({
   signature: true,
   sourceAddress: true,
@@ -125,6 +147,46 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   memo: true,
   isCritical: true,
   metadata: true,
+});
+
+// Transaction flow visualization saved configurations
+export const visualizations = pgTable("visualizations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  config: jsonb("config").notNull(),
+  dateRange: jsonb("date_range"),
+  amountRange: jsonb("amount_range"),
+  transactionTypes: jsonb("transaction_types"),
+  programs: jsonb("programs"),
+  userId: integer("user_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastModified: timestamp("last_modified"),
+  shared: boolean("shared").default(false),
+  shareToken: text("share_token"),
+  screenshot: text("screenshot"),
+  description: text("description"),
+  tags: jsonb("tags").$type<string[]>(),
+  isPublic: boolean("is_public").default(false),
+  isTemplate: boolean("is_template").default(false),
+  viewCount: integer("view_count").default(0),
+  lastViewed: timestamp("last_viewed"),
+});
+
+export const insertVisualizationSchema = createInsertSchema(visualizations).pick({
+  name: true,
+  walletAddress: true,
+  config: true,
+  dateRange: true,
+  amountRange: true,
+  transactionTypes: true,
+  programs: true,
+  userId: true,
+  shared: true,
+  description: true,
+  tags: true,
+  isPublic: true,
+  isTemplate: true,
 });
 
 // Transaction tracking (which transactions are included in which visualizations)
@@ -144,21 +206,6 @@ export const transactionTracking = pgTable("transaction_tracking", {
   };
 });
 
-export const transactionTrackingRelations = relations(transactionTracking, ({ one }) => ({
-  transaction: one(transactions, {
-    fields: [transactionTracking.transactionId],
-    references: [transactions.id],
-  }),
-  user: one(users, {
-    fields: [transactionTracking.userId],
-    references: [users.id],
-  }),
-  visualization: one(visualizations, {
-    fields: [transactionTracking.visualizationId],
-    references: [visualizations.id],
-  }),
-}));
-
 export const insertTransactionTrackingSchema = createInsertSchema(transactionTracking).pick({
   transactionId: true,
   userId: true,
@@ -166,6 +213,54 @@ export const insertTransactionTrackingSchema = createInsertSchema(transactionTra
   includeInVisualization: true,
   highlightAsImportant: true,
   customNotes: true,
+});
+
+// Comments for collaborative analysis
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  visualizationId: integer("visualization_id").references(() => visualizations.id).notNull(),
+  parentId: integer("parent_id").references(() => comments.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
+  attachmentUrl: text("attachment_url"),
+  position: jsonb("position"),  // Position on the visualization where the comment is anchored (x, y coordinates)
+  resolved: boolean("resolved").default(false),
+  referencedNodeAddress: text("referenced_node_address"), // Which wallet address this comment references
+  referencedTransactionSignature: text("referenced_transaction_signature"), // Which transaction this comment references
+});
+
+export const insertCommentSchema = createInsertSchema(comments).pick({
+  content: true,
+  userId: true,
+  visualizationId: true,
+  parentId: true,
+  attachmentUrl: true,
+  position: true,
+  referencedNodeAddress: true,
+  referencedTransactionSignature: true,
+});
+
+// Team Visualizations - associates visualizations with teams for collaboration
+export const teamVisualizations = pgTable("team_visualizations", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id).notNull(),
+  visualizationId: integer("visualization_id").references(() => visualizations.id).notNull(),
+  addedById: integer("added_by_id").references(() => users.id).notNull(),
+  addedAt: timestamp("added_at").defaultNow(),
+  pinned: boolean("pinned").default(false),
+}, (table) => {
+  return {
+    uniqTeamVisualization: unique().on(table.teamId, table.visualizationId),
+  };
+});
+
+export const insertTeamVisualizationSchema = createInsertSchema(teamVisualizations).pick({
+  teamId: true,
+  visualizationId: true,
+  addedById: true,
+  pinned: true,
 });
 
 // Funding sources for tracking the origin of funds
@@ -185,21 +280,6 @@ export const fundingSources = pgTable("funding_sources", {
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
-
-export const fundingSourcesRelations = relations(fundingSources, ({ one }) => ({
-  wallet: one(wallets, {
-    fields: [fundingSources.walletId],
-    references: [wallets.id],
-  }),
-  sourceWallet: one(wallets, {
-    fields: [fundingSources.sourceWalletId],
-    references: [wallets.id],
-  }),
-  user: one(users, {
-    fields: [fundingSources.userId],
-    references: [users.id],
-  })
-}));
 
 export const insertFundingSourceSchema = createInsertSchema(fundingSources).pick({
   walletId: true,
@@ -231,17 +311,6 @@ export const activityPatterns = pgTable("activity_patterns", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const activityPatternsRelations = relations(activityPatterns, ({ one }) => ({
-  wallet: one(wallets, {
-    fields: [activityPatterns.walletId],
-    references: [wallets.id],
-  }),
-  user: one(users, {
-    fields: [activityPatterns.userId],
-    references: [users.id],
-  })
-}));
-
 export const insertActivityPatternSchema = createInsertSchema(activityPatterns).pick({
   walletId: true,
   pattern: true,
@@ -271,10 +340,6 @@ export const entities = pgTable("entities", {
   metadata: jsonb("metadata"),
 });
 
-export const entitiesRelations = relations(entities, ({ many }) => ({
-  wallets: many(walletEntityRelations),
-}));
-
 export const insertEntitySchema = createInsertSchema(entities).pick({
   name: true,
   type: true,
@@ -298,6 +363,155 @@ export const walletEntityRelations = pgTable("wallet_entity_relations", {
   };
 });
 
+export const insertWalletEntityRelationSchema = createInsertSchema(walletEntityRelations).pick({
+  walletId: true,
+  entityId: true,
+  confirmedBy: true,
+});
+
+// Define relations
+export const usersRelations = relations(users, ({ many }) => ({
+  wallets: many(wallets),
+  visualizations: many(visualizations),
+  trackedTransactions: many(transactionTracking),
+  memberOfTeams: many(teamMembers),
+  comments: many(comments),
+}));
+
+export const teamsRelations = relations(teams, ({ many, one }) => ({
+  members: many(teamMembers),
+  visualizations: many(teamVisualizations),
+  owner: one(users, {
+    fields: [teams.ownerId],
+    references: [users.id],
+  }),
+}));
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamMembers.teamId],
+    references: [teams.id],
+  }),
+  user: one(users, {
+    fields: [teamMembers.userId],
+    references: [users.id],
+  }),
+  inviter: one(users, {
+    fields: [teamMembers.invitedBy],
+    references: [users.id],
+  }),
+}));
+
+export const walletsRelations = relations(wallets, ({ one, many }) => ({
+  user: one(users, {
+    fields: [wallets.userId],
+    references: [users.id],
+  }),
+  sourceTransactions: many(transactions, { relationName: "source" }),
+  destinationTransactions: many(transactions, { relationName: "destination" }),
+  entities: many(walletEntityRelations),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one, many }) => ({
+  source: one(wallets, {
+    fields: [transactions.sourceAddress],
+    references: [wallets.address],
+    relationName: "source",
+  }),
+  destination: one(wallets, {
+    fields: [transactions.destinationAddress],
+    references: [wallets.address],
+    relationName: "destination",
+  }),
+  trackings: many(transactionTracking),
+}));
+
+export const transactionTrackingRelations = relations(transactionTracking, ({ one }) => ({
+  transaction: one(transactions, {
+    fields: [transactionTracking.transactionId],
+    references: [transactions.id],
+  }),
+  user: one(users, {
+    fields: [transactionTracking.userId],
+    references: [users.id],
+  }),
+  visualization: one(visualizations, {
+    fields: [transactionTracking.visualizationId],
+    references: [visualizations.id],
+  }),
+}));
+
+export const visualizationsRelations = relations(visualizations, ({ one, many }) => ({
+  user: one(users, {
+    fields: [visualizations.userId],
+    references: [users.id],
+  }),
+  trackedTransactions: many(transactionTracking),
+  comments: many(comments),
+  teamVisualizations: many(teamVisualizations),
+}));
+
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  user: one(users, {
+    fields: [comments.userId],
+    references: [users.id],
+  }),
+  visualization: one(visualizations, {
+    fields: [comments.visualizationId],
+    references: [visualizations.id],
+  }),
+  parentComment: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id],
+  }),
+  replies: many(comments, { relationName: "replies" }),
+}));
+
+export const teamVisualizationsRelations = relations(teamVisualizations, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamVisualizations.teamId],
+    references: [teams.id],
+  }),
+  visualization: one(visualizations, {
+    fields: [teamVisualizations.visualizationId],
+    references: [visualizations.id],
+  }),
+  addedBy: one(users, {
+    fields: [teamVisualizations.addedById],
+    references: [users.id],
+  }),
+}));
+
+export const fundingSourcesRelations = relations(fundingSources, ({ one }) => ({
+  wallet: one(wallets, {
+    fields: [fundingSources.walletId],
+    references: [wallets.id],
+  }),
+  sourceWallet: one(wallets, {
+    fields: [fundingSources.sourceWalletId],
+    references: [wallets.id],
+  }),
+  user: one(users, {
+    fields: [fundingSources.userId],
+    references: [users.id],
+  })
+}));
+
+export const activityPatternsRelations = relations(activityPatterns, ({ one }) => ({
+  wallet: one(wallets, {
+    fields: [activityPatterns.walletId],
+    references: [wallets.id],
+  }),
+  user: one(users, {
+    fields: [activityPatterns.userId],
+    references: [users.id],
+  })
+}));
+
+export const entitiesRelations = relations(entities, ({ many }) => ({
+  wallets: many(walletEntityRelations),
+}));
+
 export const walletEntityRelationsRelations = relations(walletEntityRelations, ({ one }) => ({
   wallet: one(wallets, {
     fields: [walletEntityRelations.walletId],
@@ -309,57 +523,15 @@ export const walletEntityRelationsRelations = relations(walletEntityRelations, (
   }),
 }));
 
-export const insertWalletEntityRelationSchema = createInsertSchema(walletEntityRelations).pick({
-  walletId: true,
-  entityId: true,
-  confirmedBy: true,
-});
-
-// Transaction flow visualization saved configurations
-export const visualizations = pgTable("visualizations", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  walletAddress: text("wallet_address").notNull(),
-  config: jsonb("config").notNull(),
-  dateRange: jsonb("date_range"),
-  amountRange: jsonb("amount_range"),
-  transactionTypes: jsonb("transaction_types"),
-  programs: jsonb("programs"),
-  userId: integer("user_id").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  lastModified: timestamp("last_modified"),
-  shared: boolean("shared").default(false),
-  shareToken: text("share_token"),
-  screenshot: text("screenshot"),
-  description: text("description"),
-  tags: jsonb("tags").$type<string[]>(),
-});
-
-export const visualizationsRelations = relations(visualizations, ({ one, many }) => ({
-  user: one(users, {
-    fields: [visualizations.userId],
-    references: [users.id],
-  }),
-  trackedTransactions: many(transactionTracking),
-}));
-
-export const insertVisualizationSchema = createInsertSchema(visualizations).pick({
-  name: true,
-  walletAddress: true,
-  config: true,
-  dateRange: true,
-  amountRange: true,
-  transactionTypes: true,
-  programs: true,
-  userId: true,
-  shared: true,
-  description: true,
-  tags: true,
-});
-
 // Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type Team = typeof teams.$inferSelect;
+
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
 
 export type InsertWallet = z.infer<typeof insertWalletSchema>;
 export type Wallet = typeof wallets.$inferSelect;
@@ -369,6 +541,12 @@ export type Transaction = typeof transactions.$inferSelect;
 
 export type InsertTransactionTracking = z.infer<typeof insertTransactionTrackingSchema>;
 export type TransactionTracking = typeof transactionTracking.$inferSelect;
+
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+export type Comment = typeof comments.$inferSelect;
+
+export type InsertTeamVisualization = z.infer<typeof insertTeamVisualizationSchema>;
+export type TeamVisualization = typeof teamVisualizations.$inferSelect;
 
 export type InsertFundingSource = z.infer<typeof insertFundingSourceSchema>;
 export type FundingSource = typeof fundingSources.$inferSelect;

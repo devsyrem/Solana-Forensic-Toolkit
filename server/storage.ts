@@ -13,6 +13,7 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
   // Wallet operations
@@ -62,6 +63,38 @@ export interface IStorage {
   getUserVisualizations(userId: number): Promise<Visualization[]>;
   deleteVisualization(id: number): Promise<boolean>;
   shareVisualization(id: number, shared: boolean): Promise<Visualization | undefined>;
+  
+  // Team operations
+  createTeam(team: InsertTeam): Promise<Team>;
+  getTeam(id: number): Promise<Team | undefined>;
+  updateTeam(id: number, team: Partial<InsertTeam>): Promise<Team | undefined>;
+  deleteTeam(id: number): Promise<boolean>;
+  getUserTeams(userId: number): Promise<Team[]>;
+  
+  // Team member operations
+  addTeamMember(member: InsertTeamMember): Promise<TeamMember>;
+  getTeamMember(teamId: number, userId: number): Promise<TeamMember | undefined>;
+  getTeamMemberById(id: number): Promise<TeamMember | undefined>;
+  updateTeamMember(id: number, member: Partial<InsertTeamMember>): Promise<TeamMember | undefined>;
+  removeTeamMember(id: number): Promise<boolean>;
+  getTeamMembers(teamId: number): Promise<TeamMember[]>;
+  isTeamMember(teamId: number, userId: number): Promise<boolean>;
+  
+  // Team visualization operations
+  addTeamVisualization(teamVisualization: InsertTeamVisualization): Promise<TeamVisualization>;
+  getTeamVisualization(teamId: number, visualizationId: number): Promise<TeamVisualization | undefined>;
+  removeTeamVisualization(teamId: number, visualizationId: number): Promise<boolean>;
+  getTeamVisualizations(teamId: number): Promise<Visualization[]>;
+  userHasTeamAccessToVisualization(userId: number, visualizationId: number): Promise<boolean>;
+  userIsTeamAdminForVisualization(userId: number, visualizationId: number): Promise<boolean>;
+  
+  // Annotation operations
+  createAnnotation(annotation: InsertComment): Promise<Comment>;
+  getAnnotation(id: number): Promise<Comment | undefined>;
+  updateAnnotation(id: number, annotation: Partial<InsertComment>): Promise<Comment | undefined>;
+  deleteAnnotation(id: number): Promise<boolean>;
+  getVisualizationAnnotations(visualizationId: number): Promise<Comment[]>;
+  getAnnotationReplies(annotationId: number): Promise<Comment[]>;
 }
 
 // In-memory storage implementation (kept for reference)

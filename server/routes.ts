@@ -17,6 +17,8 @@ import fs from "fs";
 import walletAnalysisRoutes from './routes/walletAnalysis';
 import transactionClusteringRoutes from './routes/transactionClustering';
 import entityLabelingRoutes from './routes/entityLabeling';
+import teamRoutes from './routes/teamRoutes';
+import annotationRoutes from './routes/annotationRoutes';
 
 const SessionStore = MemoryStore(session);
 
@@ -36,12 +38,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   wss.on("connection", (ws) => {
     console.log("New WebSocket connection established");
     
+    // Add typings for our custom WebSocket properties
+    interface ExtendedWebSocket extends WebSocket {
+      userData?: {
+        visualizationId?: string;
+        userId?: number;
+        username?: string;
+      };
+    }
+    
+    const extWs = ws as ExtendedWebSocket;
+    
     ws.on("message", (message) => {
       try {
         const data = JSON.parse(message.toString());
-        // Handle different message types
+        
+        // Handle general subscription
         if (data.type === "subscribe") {
           ws.send(JSON.stringify({ type: "subscribed", data: data.data }));
+        }
+        
+        // Handle visualization presence - user joining a visualization
+        if (data.type === "join-visualization") {
+          // Store user data with this connection
+          extWs.userData = { 
+            visualizationId: data.visualizationId,
+            userId: data.userId,
+            username: data.username
+          };
+          
+          console.log(`User ${data.username} (${data.userId}) joined visualization ${data.visualizationId}`);
+          
+          // Broadcast to others that someone joined
+          wss.clients.forEach(client => {
+            const extClient = client as ExtendedWebSocket;
+            if (client !== ws && 
+                client.readyState === WebSocket.OPEN && 
+                extClient.userData?.visualizationId === data.visualizationId) {
+              client.send(JSON.stringify({
+                type: 'user-joined',
+                user: {
+                  id: data.userId,
+                  username: data.username,
+                  timestamp: new Date().toISOString()
+                }
+              }));
+            }
+          });
+          
+          // Send current active users to the new user
+          const activeUsers = Array.from(wss.clients)
+            .filter(client => {
+              const extClient = client as ExtendedWebSocket;
+              return client !== ws && 
+                     client.readyState === WebSocket.OPEN && 
+                     extClient.userData?.visualizationId === data.visualizationId;
+            })
+            .map(client => {
+              const extClient = client as ExtendedWebSocket;
+              return {
+                id: extClient.userData?.userId,
+                username: extClient.userData?.username
+              };
+            });
+          
+          ws.send(JSON.stringify({
+            type: 'active-users',
+            users: activeUsers
+          }));
+        }
+        
+        // Handle annotations and comments
+        if (data.type === "annotation") {
+          // Broadcast annotation to all clients viewing the same visualization
+          wss.clients.forEach(client => {
+            const extClient = client as ExtendedWebSocket;
+            if (client !== ws && 
+                client.readyState === WebSocket.OPEN && 
+                extClient.userData?.visualizationId === data.visualizationId) {
+              client.send(JSON.stringify({
+                type: 'new-annotation',
+                annotation: data.annotation
+              }));
+            }
+          });
+        }
+        
+        // Handle cursor position updates for real-time collaboration
+        if (data.type === "cursor-position") {
+          // Broadcast cursor position to all clients viewing the same visualization
+          wss.clients.forEach(client => {
+            const extClient = client as ExtendedWebSocket;
+            if (client !== ws && 
+                client.readyState === WebSocket.OPEN && 
+                extClient.userData?.visualizationId === data.visualizationId) {
+              client.send(JSON.stringify({
+                type: 'cursor-update',
+                userId: data.userId,
+                username: data.username,
+                position: data.position
+              }));
+            }
+          });
         }
       } catch (error) {
         console.error("WebSocket error:", error);
@@ -61,6 +159,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     ws.on("close", () => {
       console.log("WebSocket connection closed");
+      
+      // Notify others if this user was in a visualization
+      const extWs = ws as ExtendedWebSocket;
+      if (extWs.userData?.visualizationId && extWs.userData?.userId) {
+        // Broadcast to others that this user left
+        wss.clients.forEach(client => {
+          const extClient = client as ExtendedWebSocket;
+          if (client !== ws && 
+              client.readyState === WebSocket.OPEN && 
+              extClient.userData?.visualizationId === extWs.userData?.visualizationId) {
+            client.send(JSON.stringify({
+              type: 'user-left',
+              userId: extWs.userData.userId,
+              username: extWs.userData.username,
+              timestamp: new Date().toISOString()
+            }));
+          }
+        });
+      }
+      
       clearInterval(interval);
     });
   });
@@ -589,6 +707,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register entity labeling routes
   app.use('/api/entity-labeling', entityLabelingRoutes);
+  app.use('/api/teams', teamRoutes);
+  app.use('/api/annotations', annotationRoutes);
 
   return httpServer;
 }

@@ -235,7 +235,7 @@ export default function FlowVisualization({
         {/* Visualization Tip */}
         <div className="absolute top-2 left-2 z-10 bg-solana-dark-light bg-opacity-80 px-2 py-1 rounded-md shadow-md text-xs text-gray-300 flex items-center space-x-1.5">
           <span className="text-solana-primary">Tip:</span>
-          <span>Double-click any node to view in Solscan</span>
+          <span>Double-click any node to view address in Solscan. Double-click edges to view transactions.</span>
         </div>
         
         {filteredWalletAddress && (
@@ -274,7 +274,7 @@ export default function FlowVisualization({
         </div>
       </div>
       
-      {/* Node/Edge Details Card */}
+      {/* Node Details Card */}
       {selectedNode && (
         <div className="absolute right-4 top-12 bg-solana-dark-lighter rounded-md p-3 text-xs shadow-lg border border-solana-dark-light w-48">
           <div className="flex justify-between items-center mb-2">
@@ -304,7 +304,7 @@ export default function FlowVisualization({
             )}
           </div>
           <div className="text-[10px] text-gray-400 mb-1 italic flex items-center justify-center">
-            <span>Double-click nodes to open in Solscan</span>
+            <span>Double-click to view {selectedNode.type === 'program' ? 'program' : 'address'} in Solscan</span>
           </div>
           <div className="flex space-x-2">
             <Button 
@@ -334,6 +334,68 @@ export default function FlowVisualization({
                   <span>Filter By Node</span>
                 </>
               )}
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Transaction Edge Details Card */}
+      {selectedEdge && !selectedNode && (
+        <div className="absolute right-4 top-12 bg-solana-dark-lighter rounded-md p-3 text-xs shadow-lg border border-solana-dark-light w-48">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium text-white">
+              Transaction
+            </span>
+            <span className="text-gray-400 text-[10px]">
+              {selectedEdge.timestamp ? formatTimeAgo(new Date(selectedEdge.timestamp)) : ''}
+            </span>
+          </div>
+          <div className="space-y-1 mb-2">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Type:</span>
+              <span className="text-white capitalize">{selectedEdge.type}</span>
+            </div>
+            {selectedEdge.amount !== undefined && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Amount:</span>
+                <span className="text-white">{formatSolAmount(selectedEdge.amount)} SOL</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-400">From:</span>
+              <span className="text-white font-mono">{shortenAddress(selectedEdge.source.toString())}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">To:</span>
+              <span className="text-white font-mono">{shortenAddress(selectedEdge.target.toString())}</span>
+            </div>
+            {selectedEdge.signature && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Signature:</span>
+                <span className="text-white font-mono">{shortenAddress(selectedEdge.signature, 6)}</span>
+              </div>
+            )}
+            {selectedEdge.isCritical && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Critical Path:</span>
+                <span className="text-white">Yes</span>
+              </div>
+            )}
+          </div>
+          <div className="text-[10px] text-gray-400 mb-1 italic flex items-center justify-center">
+            <span>Double-click to view transaction in Solscan</span>
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              className="bg-solana-dark hover:bg-solana-dark-light text-gray-300 px-2 py-1 rounded text-[10px] flex-1 flex items-center justify-center space-x-1"
+              onClick={() => {
+                if (selectedEdge && selectedEdge.signature) {
+                  openInSolscan(selectedEdge.signature, 'tx');
+                }
+              }}
+            >
+              View Transaction
             </Button>
           </div>
         </div>

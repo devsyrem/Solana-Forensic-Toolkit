@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { VisualizationGraph, WalletNode, TransactionEdge } from "@/types/solana";
-import { shortenAddress } from "@/lib/utils";
+import { shortenAddress, openInSolscan } from "@/lib/utils";
 
 interface UseVisualizationProps {
   graph: VisualizationGraph;
@@ -128,6 +128,12 @@ export function useVisualization({
       .on("click", (_event, d) => {
         setSelectedEdge(d);
         if (onEdgeClick) onEdgeClick(d);
+      })
+      .on("dblclick", (_event, d) => {
+        // Open transaction in Solscan on double-click if a transaction signature is available
+        if (d.signature) {
+          openInSolscan(d.signature, 'tx');
+        }
       });
     
     // Create nodes
@@ -141,11 +147,10 @@ export function useVisualization({
         if (onNodeClick) onNodeClick(d);
       })
       .on("dblclick", (_event, d) => {
-        // Import dynamically to avoid circular dependencies
-        import("@/lib/utils").then(({ openInSolscan }) => {
-          // Open in Solscan on double-click
-          openInSolscan(d.address);
-        });
+        // Open in Solscan on double-click using the appropriate type
+        // If it's a program/contract, use the appropriate path
+        const type = d.type === 'program' ? 'contract' : 'address';
+        openInSolscan(d.address, type);
       });
     
     // Add circles to nodes

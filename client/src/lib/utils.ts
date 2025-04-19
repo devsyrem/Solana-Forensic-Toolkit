@@ -109,21 +109,21 @@ export const tailwindStyles = {
 };
 
 /**
- * Generate a Solscan URL for a Solana address (wallet or transaction)
- * @param address Solana wallet address or transaction signature
- * @param type Type of entity ('address' for wallet or 'tx' for transaction)
+ * Generate a Solscan URL for a Solana address (wallet, transaction, or contract)
+ * @param address Solana wallet address, transaction signature or contract address
+ * @param type Type of entity ('address' for wallet, 'tx' for transaction, or 'contract' for program)
  * @returns URL to the Solscan page
  */
-export function getSolscanUrl(address: string, type: 'address' | 'tx' = 'address'): string {
+export function getSolscanUrl(address: string, type: 'address' | 'tx' | 'contract' = 'address'): string {
   return `https://solscan.io/${type}/${address}`;
 }
 
 /**
  * Opens the Solscan page for a Solana address in a new tab
- * @param address Solana wallet address or transaction signature
- * @param type Type of entity ('address' for wallet or 'tx' for transaction)
+ * @param address Solana wallet address, transaction signature, or contract address
+ * @param type Type of entity ('address' for wallet, 'tx' for transaction, or 'contract' for program)
  */
-export function openInSolscan(address: string, type: 'address' | 'tx' = 'address'): void {
+export function openInSolscan(address: string, type: 'address' | 'tx' | 'contract' = 'address'): void {
   const url = getSolscanUrl(address, type);
   window.open(url, '_blank', 'noopener,noreferrer');
 }
