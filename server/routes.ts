@@ -25,6 +25,15 @@ const SessionStore = MemoryStore(session);
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Add global cache control middleware for all API routes
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    next();
+  });
 
   // Set up WebSocket server for real-time updates
   const wss = new WebSocket.Server({ 
@@ -824,6 +833,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(["/static", "/static-app", "/solflow-static", "/solana-flow"], (req, res) => {
     const staticHtmlPath = path.resolve(process.cwd(), "static", "index.html");
     
+    // Add cache control headers to prevent caching
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    
     try {
       if (fs.existsSync(staticHtmlPath)) {
         console.log(`Serving static HTML file from: ${staticHtmlPath} for path: ${req.path}`);
@@ -859,6 +874,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve visualization page
   app.get(["/visualization", "/visualization/:address"], (req, res) => {
     const vizHtmlPath = path.resolve(process.cwd(), "static", "visualization.html");
+    
+    // Add cache control headers to prevent caching
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     
     try {
       if (fs.existsSync(vizHtmlPath)) {

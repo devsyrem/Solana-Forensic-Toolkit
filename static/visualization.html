@@ -599,7 +599,7 @@
                 }
                 
                 // Create a sample visualization graph (in a real app, we would process the transaction data)
-                createSampleGraph(address, transactions);
+                createTransactionGraph(address, transactions);
                 
                 // Update status
                 $('status-text').textContent = 'Transaction data loaded';
@@ -621,8 +621,8 @@
             }
         }
         
-        // Create a sample visualization graph
-        function createSampleGraph(mainAddress, transactions) {
+        // Create a transaction visualization graph from real blockchain data
+        function createTransactionGraph(mainAddress, transactions) {
             const nodes = new Map();
             const edges = [];
             
