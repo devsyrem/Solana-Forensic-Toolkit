@@ -241,9 +241,9 @@ export function useSolanaData({
         address: mainAddress,
         balance: wallet.balance,
         transactionCount: transactions?.length || 0,
-        connectedWallets: interactions.size,
         lastActivity,
-        topInteractions
+        topInteractions,
+        connectedEntities: interactions.size, // Changed from connectedWallets to match type definition
       });
     }
     
@@ -252,7 +252,8 @@ export function useSolanaData({
       .map(([dateStr, data]) => ({
         date: new Date(dateStr),
         totalTransactions: data.total,
-        transactionsByType: data.byType as Record<any, number>
+        transactionsByType: data.byType as Record<any, number>,
+        volume: 0, // Add missing required field for type compatibility
       }))
       .sort((a, b) => a.date.getTime() - b.date.getTime());
     
@@ -293,9 +294,9 @@ export function useSolanaData({
         id: 'exchange-cluster',
         name: 'Exchange Cluster',
         type: 'exchange',
-        walletCount: exchangeAddresses.size,
+        count: exchangeAddresses.size, // Changed from walletCount to count
         description: 'Likely associated with a centralized exchange',
-        wallets: Array.from(exchangeAddresses)
+        addresses: Array.from(exchangeAddresses) // Changed from wallets to addresses
       });
     }
     
@@ -303,10 +304,10 @@ export function useSolanaData({
       clusters.push({
         id: 'related-wallets',
         name: 'Related Wallets',
-        type: 'related',
-        walletCount: relatedAddresses.size,
+        type: 'wallet', // Changed from 'related' to 'wallet' to match valid type
+        count: relatedAddresses.size,
         description: 'Likely controlled by the same entity',
-        wallets: Array.from(relatedAddresses)
+        addresses: Array.from(relatedAddresses)
       });
     }
     
@@ -314,10 +315,10 @@ export function useSolanaData({
       clusters.push({
         id: 'defi-interaction',
         name: 'DeFi Interaction',
-        type: 'defi',
-        walletCount: defiAddresses.size,
+        type: 'dex', // Changed from 'defi' to 'dex' to match valid type
+        count: defiAddresses.size,
         description: 'Protocols this wallet interacts with',
-        wallets: Array.from(defiAddresses)
+        addresses: Array.from(defiAddresses)
       });
     }
     
