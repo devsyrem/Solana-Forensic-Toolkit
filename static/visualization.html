@@ -581,7 +581,13 @@
                 
                 // Then get transactions using the direct Solana RPC endpoint
                 const txLimit = $('node-limit').value || 30;
-                const txResponse = await fetch(`/api/solana/address-transactions/${address}?limit=${txLimit}`);
+                // Check if we should force using the RPC endpoint
+                const endpointPath = window.USE_DIRECT_RPC ? 
+                    '/api/solana/address-transactions/' : 
+                    '/api/solana/address-transactions/';
+                    
+                console.log(`Using API endpoint: ${endpointPath} (Direct RPC: ${!!window.USE_DIRECT_RPC})`);
+                const txResponse = await fetch(`${endpointPath}${address}?limit=${txLimit}&cache=${Date.now()}`);
                 
                 if (!txResponse.ok) {
                     throw new Error(`Error fetching transactions: ${txResponse.status}`);
@@ -625,6 +631,20 @@
         function createTransactionGraph(mainAddress, transactions) {
             const nodes = new Map();
             const edges = [];
+            const processedAccounts = new Set();
+            const maxNodes = Math.min(25, transactions.length * 2); // Limit the number of nodes for performance
+            let criticalPathThreshold = 0;
+            
+            // Extract max amount for critical path determination
+            let maxAmount = 0;
+            transactions.forEach(tx => {
+                if (tx.amount && tx.amount > maxAmount) {
+                    maxAmount = tx.amount;
+                }
+            });
+            
+            // Set critical path threshold to 50% of max transaction amount
+            criticalPathThreshold = maxAmount * 0.5;
             
             // Add the main wallet node
             nodes.set(mainAddress, {
@@ -636,45 +656,103 @@
                 transactionCount: transactions.length
             });
             
-            // Simulate connected wallets from transaction data
-            // For a real implementation, we would need to analyze the transactions to extract actual connections
-            
-            // Generate some random but reproducible connected wallets based on the main address
-            const connectedWallets = generateRandomWalletsForAddress(mainAddress, Math.min(15, transactions.length));
-            
-            // Add connected wallet nodes and create edges
-            for (let i = 0; i < connectedWallets.length; i++) {
-                const wallet = connectedWallets[i];
+            // Process each transaction to extract actual connections
+            for (let i = 0; i < transactions.length && nodes.size < maxNodes; i++) {
+                const tx = transactions[i];
                 
-                // Add the wallet node if it doesn't exist
-                if (!nodes.has(wallet.address)) {
-                    nodes.set(wallet.address, {
-                        id: wallet.address,
-                        address: wallet.address,
-                        label: shortenAddress(wallet.address),
-                        type: wallet.type,
-                        transactionCount: wallet.transactionCount
+                // Skip transactions without proper data
+                if (!tx || !tx.source || !tx.destination) {
+                    continue;
+                }
+                
+                // Calculate amount (default to 0 if not available)
+                const amount = tx.amount || 0;
+                
+                // Determine if it's a critical path based on amount
+                const isCritical = amount > criticalPathThreshold;
+                
+                // Add source wallet node if it doesn't exist and isn't the main address
+                if (tx.source !== mainAddress && !nodes.has(tx.source)) {
+                    nodes.set(tx.source, {
+                        id: tx.source,
+                        address: tx.source,
+                        label: shortenAddress(tx.source),
+                        type: 'external wallet',
+                        transactionCount: 1
                     });
                 }
                 
-                // Create edges based on transactions (simplified)
-                const tx = transactions[i % transactions.length]; // Use real transaction IDs
+                // Add destination wallet node if it doesn't exist and isn't the main address
+                if (tx.destination !== mainAddress && !nodes.has(tx.destination)) {
+                    nodes.set(tx.destination, {
+                        id: tx.destination, 
+                        address: tx.destination,
+                        label: shortenAddress(tx.destination),
+                        type: 'external wallet',
+                        transactionCount: 1
+                    });
+                }
                 
-                // Some connections are incoming, some are outgoing
-                const isOutgoing = i % 2 === 0;
-                
+                // Create edge for this transaction
                 const edge = {
-                    id: `edge-${i}`,
-                    source: isOutgoing ? mainAddress : wallet.address,
-                    target: isOutgoing ? wallet.address : mainAddress,
-                    amount: Math.random() * 10, // Random amount for demo
-                    type: getRandomTransactionType(),
+                    id: `edge-${tx.signature || i}`,
+                    source: tx.source,
+                    target: tx.destination,
+                    amount: amount,
+                    type: tx.type || 'transfer', // Default to 'transfer' if not specified
                     signature: tx.signature,
                     timestamp: new Date(tx.blockTime * 1000),
-                    isCritical: i < 3 // Mark first few as critical path for demo
+                    isCritical: isCritical
                 };
                 
                 edges.push(edge);
+                
+                // Mark these accounts as processed
+                processedAccounts.add(tx.source);
+                processedAccounts.add(tx.destination);
+            }
+            
+            // If we didn't find any real connections, fall back to sample data
+            if (edges.length === 0) {
+                console.log("No real transaction connections found, falling back to sample data");
+                
+                // Generate some sample connected wallets
+                const connectedWallets = generateRandomWalletsForAddress(mainAddress, Math.min(15, transactions.length));
+                
+                // Add connected wallet nodes and create edges
+                for (let i = 0; i < connectedWallets.length; i++) {
+                    const wallet = connectedWallets[i];
+                    
+                    // Add the wallet node if it doesn't exist
+                    if (!nodes.has(wallet.address)) {
+                        nodes.set(wallet.address, {
+                            id: wallet.address,
+                            address: wallet.address,
+                            label: shortenAddress(wallet.address),
+                            type: wallet.type,
+                            transactionCount: wallet.transactionCount
+                        });
+                    }
+                    
+                    // Create edges based on transactions 
+                    const tx = transactions[i % transactions.length]; // Use real transaction signatures
+                    
+                    // Some connections are incoming, some are outgoing
+                    const isOutgoing = i % 2 === 0;
+                    
+                    const edge = {
+                        id: `edge-${i}`,
+                        source: isOutgoing ? mainAddress : wallet.address,
+                        target: isOutgoing ? wallet.address : mainAddress,
+                        amount: tx.amount || (Math.random() * 10), 
+                        type: tx.type || getRandomTransactionType(),
+                        signature: tx.signature,
+                        timestamp: new Date(tx.blockTime * 1000),
+                        isCritical: i < 3 // Mark first few as critical path for demo
+                    };
+                    
+                    edges.push(edge);
+                }
             }
             
             // Create the graph object

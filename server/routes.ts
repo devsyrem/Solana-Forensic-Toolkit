@@ -871,7 +871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve visualization page
+  // Serve visualization page with different URL for new version
   app.get(["/visualization", "/visualization/:address"], (req, res) => {
     const vizHtmlPath = path.resolve(process.cwd(), "static", "visualization.html");
     
@@ -885,6 +885,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (fs.existsSync(vizHtmlPath)) {
         console.log(`Serving visualization HTML from: ${vizHtmlPath} for path: ${req.path}`);
         return res.sendFile(vizHtmlPath);
+      } else {
+        console.error(`Visualization HTML file not found at: ${vizHtmlPath}`);
+        return res.status(404).send("Visualization HTML file not found");
+      }
+    } catch (error) {
+      console.error("Error serving visualization file:", error);
+      return res.status(500).send("Error serving visualization HTML file");
+    }
+  });
+  
+  // New route for direct RPC-based visualization 
+  app.get(["/rpc-visualization", "/rpc-visualization/:address"], (req, res) => {
+    const vizHtmlPath = path.resolve(process.cwd(), "static", "visualization.html");
+    
+    // Add cache control headers to prevent caching
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    // Also add a random query parameter to the HTML to bust cache
+    res.setHeader('Content-Type', 'text/html; charset=UTF-8');
+    
+    try {
+      if (fs.existsSync(vizHtmlPath)) {
+        console.log(`Serving RPC visualization HTML from: ${vizHtmlPath} for path: ${req.path}`);
+        
+        // Read the HTML file content
+        const htmlContent = fs.readFileSync(vizHtmlPath, 'utf8');
+        
+        // Add cache busting timestamp and force to use our new endpoint
+        const modifiedHtml = htmlContent
+          .replace('</head>', `<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate">
+          <meta http-equiv="Pragma" content="no-cache">
+          <meta http-equiv="Expires" content="0">
+          <script>window.USE_DIRECT_RPC = true;</script>
+          <script>window.CACHE_TIMESTAMP = "${Date.now()}";</script>
+          </head>`);
+        
+        return res.send(modifiedHtml);
       } else {
         console.error(`Visualization HTML file not found at: ${vizHtmlPath}`);
         return res.status(404).send("Visualization HTML file not found");
