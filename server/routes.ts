@@ -755,7 +755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ 
       status: "ok", 
       timestamp: new Date().toISOString(),
-      solana: !!process.env.SOLANA_RPC_URL ? "custom" : "default"
+      solana: "default"
     });
   });
   

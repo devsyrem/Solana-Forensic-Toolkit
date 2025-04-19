@@ -150,11 +150,7 @@ app.use((req, res, next) => {
     }
     
     // Log Solana RPC URL status (but not the actual URL for security)
-    if (process.env.SOLANA_RPC_URL) {
-      log(`Using custom Solana RPC endpoint`);
-    } else {
-      log(`Using default Solana RPC endpoint (rate limited)`);
-    }
+    log(`Using default Solana RPC endpoint (rate limited)`); // We're now always using the default endpoint
   });
   
   // Handle server errors

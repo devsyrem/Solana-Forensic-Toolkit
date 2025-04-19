@@ -4,17 +4,18 @@ let connection: Connection;
 
 /**
  * Gets or creates a Solana connection using the configured endpoint.
- * If SOLANA_RPC_URL is set, it will use that endpoint. Otherwise, it uses the mainnet-beta endpoint.
+ * We're now using the default mainnet-beta endpoint since the custom endpoint was having issues.
  */
 export function getSolanaConnection(): Connection {
   if (!connection) {
-    const rpcEndpoint = process.env.SOLANA_RPC_URL || clusterApiUrl('mainnet-beta');
+    // Force using the default mainnet-beta endpoint
+    const rpcEndpoint = clusterApiUrl('mainnet-beta');
     connection = new Connection(rpcEndpoint, {
       commitment: 'confirmed',
       disableRetryOnRateLimit: false,
       confirmTransactionInitialTimeout: 60000,
     });
-    console.log('Initialized Solana connection to RPC endpoint');
+    console.log('Initialized Solana connection to default mainnet RPC endpoint');
   }
   return connection;
 }
