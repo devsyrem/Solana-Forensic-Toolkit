@@ -1,5 +1,27 @@
 # SolFlow: Solana Transaction Flow Visualization & Analysis Platform
 
+## Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Technical Architecture](#technical-architecture)
+- [Getting Started](#getting-started)
+- [User Guide](#user-guide)
+- [Collaboration Features](#collaboration-features)
+- [Codebase Structure](#codebase-structure)
+- [Database Schema](#database-schema)
+- [API Endpoints](#api-endpoints)
+- [WebSocket Protocol](#websocket-protocol)
+- [Blockchain Integration](#blockchain-integration)
+- [Dependencies](#dependencies)
+- [Performance Optimizations](#performance-optimizations)
+- [Security Considerations](#security-considerations)
+- [Troubleshooting](#troubleshooting)
+- [Development Workflow](#development-workflow)
+- [Future Roadmap](#future-roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
 ## Overview
 
 SolFlow is a comprehensive blockchain analytics platform designed to transform complex Solana transaction data into intuitive, user-friendly visualizations and insights. The platform empowers users to visualize transaction flows between wallets, track funding sources, identify suspicious patterns, and collaborate in real-time with team members.
@@ -99,8 +121,19 @@ To run SolFlow locally, you'll need:
 
 3. Configure environment variables:
    ```
-   DATABASE_URL=postgresql://user:password@host:port/database
-   SOLANA_RPC_URL=https://your-solana-rpc-endpoint
+   # Database Configuration
+   DATABASE_URL=postgresql://username:password@localhost:5432/solflow
+
+   # Solana Configuration
+   SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+
+   # Server Configuration
+   PORT=5000
+   NODE_ENV=development
+   SESSION_SECRET=your_secret_session_key
+
+   # Optional: OpenAI API Key (for AI-powered analytics)
+   # OPENAI_API_KEY=your_openai_api_key
    ```
 
 4. Set up the database:
@@ -112,6 +145,23 @@ To run SolFlow locally, you'll need:
    ```bash
    npm run dev
    ```
+
+### Accessing the Application
+
+Open your web browser and navigate to:
+
+```
+http://localhost:5000
+```
+
+You should see the SolFlow login page. Since this is a fresh installation, you'll need to create a new account.
+
+### Initial Setup
+
+1. Click on "Create Account" from the login page
+2. Fill in your desired username, email, and password
+3. Submit the form to create your account
+4. You'll be automatically logged in after successful account creation
 
 ## User Guide
 
@@ -155,22 +205,413 @@ The filter sidebar allows you to:
 - Click the "Save & Share" button to save your current visualization
 - Use the sharing options to invite team members or generate a link
 
-### Collaboration Features
+## Collaboration Features
 
-#### Team Management
+SolFlow offers a comprehensive suite of collaboration tools designed specifically for blockchain analysis:
+
+### Team Management
+
+#### Creating Teams
+
+Teams in SolFlow provide a way to organize collaborators working on related analyses:
+
+1. Navigate to the "Team" tab in any visualization
+2. Click "Create New Team"
+3. Provide a team name and optional description
+4. Submit the form to create your team
+
+Once created, you'll become the team admin automatically.
+
+#### Team Roles and Permissions
+
+SolFlow offers three role levels with different capabilities:
+
+1. **Admin**:
+   - Full control over team settings
+   - Add/remove team members
+   - Modify member roles
+   - Share/unshare visualizations
+   - Delete team visualizations
+   - Edit/delete any team member's annotations
+
+2. **Member**:
+   - Create new visualizations for the team
+   - Edit shared visualizations
+   - Add annotations to any team visualization
+   - Edit/delete their own annotations
+   - View team members and their activities
+
+3. **Viewer**:
+   - View shared visualizations
+   - Add annotations to visualizations
+   - Edit/delete their own annotations
+   - Cannot modify visualizations or team settings
+
+#### Inviting Team Members
+
+To add members to your team:
 
 1. Navigate to the "Team" tab
-2. Create a new team or select an existing one
-3. Invite members via email and assign roles (admin, member, viewer)
-4. Share visualizations with team members
+2. Select your team from the dropdown if you have multiple teams
+3. Click the "Invite" button
+4. Enter the email address of the person you want to invite
+5. Select the appropriate role (Admin, Member, or Viewer)
+6. Click "Send Invitation"
 
-#### Annotations
+The invited user will receive an email notification with instructions to join the team. If they don't have an account yet, they'll be prompted to create one.
+
+### Sharing Visualizations
+
+To share a visualization with your team:
+
+1. Create or open an existing visualization
+2. Click the "Save & Share" button if the visualization isn't saved yet
+3. Navigate to the "Team" tab
+4. Select the team you want to share with
+5. Click "Share with Team"
+
+The visualization will now be accessible to all team members based on their roles.
+
+### Real-time Collaboration
+
+SolFlow enables real-time collaboration through WebSocket connections:
+
+1. **User Presence**: See who's currently viewing the same visualization
+2. **Live Updates**: Changes to visualizations and annotations appear instantly for all viewers
+3. **Conflict Resolution**: System handles simultaneous edits by multiple users
+
+### Annotations and Comments
+
+SolFlow allows users to add annotations to different elements:
+
+1. **Visualization Annotations**: General notes about the entire visualization
+2. **Wallet Annotations**: Notes attached to specific wallet nodes
+3. **Transaction Annotations**: Notes attached to specific transactions
+
+To add an annotation:
 
 1. Navigate to the "Annotations" tab
-2. Add comments to the entire visualization or specific elements
-3. Tag team members in comments
-4. Reply to existing comments
-5. View annotations filtered by wallet or transaction
+2. Select the element type (visualization, wallet, transaction)
+3. Enter your annotation text
+4. Click "Add Annotation"
+
+Users can also reply to annotations, creating threaded discussions about specific findings.
+
+## Codebase Structure
+
+The SolFlow codebase follows a client-server architecture with clear separation of concerns:
+
+```
+├── client/                 # Frontend React application
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── lib/            # Utility functions and services
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API service functions
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── App.tsx         # Main application component
+│   │   └── main.tsx        # Application entry point
+│   └── index.html          # HTML template
+├── server/                 # Backend Express application
+│   ├── routes/             # API route handlers
+│   ├── services/           # Business logic services
+│   ├── db.ts               # Database connection setup
+│   ├── index.ts            # Server entry point
+│   ├── routes.ts           # Main route registration
+│   ├── storage.ts          # Data storage interface
+│   ├── solana.ts           # Solana blockchain connection
+│   └── vite.ts             # Vite server integration
+├── shared/                 # Shared code between client and server
+│   └── schema.ts           # Database schema and types
+└── drizzle.config.ts       # Drizzle ORM configuration
+```
+
+### Frontend Architecture
+
+The frontend follows a component-based architecture using React. It's organized into:
+
+1. **Presentation Components**: UI components that render data and handle user interactions
+2. **Container Components**: Connect presentation components to data sources and services
+3. **Custom Hooks**: Encapsulate and share stateful logic between components
+4. **Services**: Handle API communication and data transformation
+
+Key design patterns used:
+- **Container/Presentational Pattern**: Separation of data and presentation concerns
+- **Custom Hook Pattern**: Reusable stateful logic
+- **Context API**: Global state management for authentication and theme
+- **Render Props**: Component composition for complex UI elements
+
+### Backend Architecture
+
+The backend follows a route-controller-service architecture:
+
+1. **Routes**: Define API endpoints and handle HTTP requests
+2. **Services**: Contain business logic and data manipulation
+3. **Storage Interface**: Abstracts database operations
+4. **Database Layer**: Handles data persistence
+
+Key design patterns used:
+- **Repository Pattern**: Abstraction for data access
+- **Dependency Injection**: Services receive dependencies through constructors
+- **Middleware Pattern**: Request processing pipeline
+- **Adapter Pattern**: Integration with external systems (Solana RPC)
+
+## Database Schema
+
+The database schema consists of several core entities:
+
+### Users and Authentication
+
+```typescript
+// Users table
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  email: text("email").unique(),
+  passwordHash: text("password_hash"),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLogin: timestamp("last_login"),
+});
+
+// User sessions
+export const sessions = pgTable("sessions", {
+  sid: text("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
+```
+
+### Wallets and Transactions
+
+```typescript
+// Wallets table
+export const wallets = pgTable("wallets", {
+  id: serial("id").primaryKey(),
+  address: text("address").notNull().unique(),
+  label: text("label"),
+  type: text("type").default("wallet"),
+  firstSeen: timestamp("first_seen").defaultNow(),
+  lastActivity: timestamp("last_activity"),
+  lastFetched: timestamp("last_fetched"),
+  riskScore: integer("risk_score"),
+  isMonitored: boolean("is_monitored").default(false),
+  userId: integer("user_id").references(() => users.id),
+});
+
+// Transactions table
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  signature: text("signature").notNull().unique(),
+  fromAddress: text("from_address").notNull(),
+  toAddress: text("to_address").notNull(),
+  amount: numeric("amount"),
+  timestamp: timestamp("timestamp").notNull(),
+  transactionType: text("transaction_type"),
+  program: text("program"),
+  status: text("status").default("confirmed"),
+  blockNumber: bigint("block_number", { mode: "number" }),
+  slot: bigint("slot", { mode: "number" }),
+  memo: text("memo"),
+  raw: jsonb("raw"),
+});
+```
+
+### Visualizations and Collaboration
+
+```typescript
+// Visualizations table
+export const visualizations = pgTable("visualizations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  config: jsonb("config").notNull(),
+  description: text("description"),
+  userId: integer("user_id").references(() => users.id),
+  dateRange: jsonb("date_range"),
+  amountRange: jsonb("amount_range"),
+  transactionTypes: jsonb("transaction_types"),
+  programs: jsonb("programs"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isPublic: boolean("is_public").default(false),
+  shareToken: text("share_token").unique(),
+  lastViewed: timestamp("last_viewed"),
+});
+
+// Teams table
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdById: integer("created_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Team members
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  role: text("role").default("member").notNull(),
+  addedAt: timestamp("added_at").defaultNow(),
+  lastActive: timestamp("last_active"),
+});
+
+// Comments/Annotations
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  visualizationId: integer("visualization_id").references(() => visualizations.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  referencedNodeAddress: text("referenced_node_address"),
+  referencedTransactionSignature: text("referenced_transaction_signature"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
+  parentId: integer("parent_id").references(() => comments.id),
+});
+```
+
+## API Endpoints
+
+The API provides these main endpoint groups:
+
+1. **Authentication**:
+   - `POST /api/auth/login`: Log in a user
+   - `POST /api/auth/logout`: Log out the current user
+   - `GET /api/auth/user`: Get the current user
+
+2. **Wallets**:
+   - `GET /api/wallets/:address`: Get wallet details
+   - `GET /api/wallets/:address/transactions`: Get wallet transactions
+
+3. **Visualizations**:
+   - `GET /api/visualizations`: List user visualizations
+   - `GET /api/visualizations/:id`: Get visualization details
+   - `POST /api/visualizations`: Create a visualization
+   - `PATCH /api/visualizations/:id`: Update a visualization
+   - `DELETE /api/visualizations/:id`: Delete a visualization
+
+4. **Teams**:
+   - `GET /api/teams`: List user teams
+   - `POST /api/teams`: Create a team
+   - `GET /api/teams/:id`: Get team details
+   - `PATCH /api/teams/:id`: Update a team
+   - `DELETE /api/teams/:id`: Delete a team
+   - `GET /api/teams/:id/members`: List team members
+   - `POST /api/teams/:id/members/invite`: Invite a team member
+   - `PATCH /api/teams/:id/members/:memberId`: Update member role
+   - `DELETE /api/teams/:id/members/:memberId`: Remove a member
+
+5. **Annotations**:
+   - `GET /api/visualizations/:id/annotations`: List annotations
+   - `POST /api/visualizations/:id/annotations`: Create an annotation
+   - `PATCH /api/annotations/:id`: Update an annotation
+   - `DELETE /api/annotations/:id`: Delete an annotation
+   - `POST /api/annotations/:id/replies`: Reply to an annotation
+
+## WebSocket Protocol
+
+The WebSocket implementation uses a simple message protocol:
+
+```typescript
+interface WebSocketMessage {
+  type: string;
+  [key: string]: any;
+}
+
+// Example message types
+interface JoinVisualizationMessage extends WebSocketMessage {
+  type: 'join-visualization';
+  visualizationId: number;
+  userId: number;
+  username: string;
+}
+
+interface CursorUpdateMessage extends WebSocketMessage {
+  type: 'cursor-update';
+  visualizationId: number;
+  userId: number;
+  position: { x: number; y: number };
+}
+
+interface NewAnnotationMessage extends WebSocketMessage {
+  type: 'new-annotation';
+  visualizationId: number;
+  annotationId: number;
+  userId: number;
+  username: string;
+}
+```
+
+These messages are serialized as JSON for transmission over the WebSocket connection.
+
+## Blockchain Integration
+
+The application integrates with the Solana blockchain through:
+
+1. **Connection Setup**:
+   ```typescript
+   import { Connection } from '@solana/web3.js';
+   
+   export function getSolanaConnection(): Connection {
+     const endpoint = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+     return new Connection(endpoint);
+   }
+   ```
+
+2. **Transaction Fetching**:
+   ```typescript
+   async function fetchTransactionsForWallet(address: string): Promise<Transaction[]> {
+     const connection = getSolanaConnection();
+     const publicKey = new PublicKey(address);
+     
+     // Fetch signatures
+     const signatures = await connection.getSignaturesForAddress(
+       publicKey,
+       { limit: 100 }
+     );
+     
+     // Fetch transaction details
+     const transactionDetails = await connection.getParsedTransactions(
+       signatures.map(sig => sig.signature)
+     );
+     
+     // Transform and store transactions
+     // ...
+   }
+   ```
+
+3. **Data Processing**:
+   - Parse raw transaction data
+   - Extract sender, receiver, amounts
+   - Identify transaction types
+   - Calculate relationships between wallets
+
+### Solana Transaction Processing
+
+The application processes Solana transactions in several steps:
+
+1. **Fetch Transaction Signatures**: Get recent transaction signatures for a wallet
+2. **Fetch Transaction Details**: Get parsed transaction data for each signature
+3. **Extract Relevant Information**:
+   - Sender and receiver addresses
+   - Transaction amount and token type
+   - Program ID to determine transaction type
+   - Timestamp and block information
+
+4. **Process Instruction Data**: Different instructions require specific parsing:
+   - System Program transfers
+   - Token Program transfers
+   - Swap operations
+   - NFT transactions
+   - DeFi interactions
+
+5. **Build Transaction Graph**:
+   - Create nodes for wallets
+   - Create edges for transactions
+   - Calculate edge weights based on amounts
+   - Apply layout algorithms
 
 ## Dependencies
 
@@ -214,6 +655,17 @@ SolFlow relies on numerous dependencies to provide its functionality:
 - **drizzle-kit**: CLI tools for Drizzle ORM
 - **tsx**: TypeScript execution environment
 
+## Performance Optimizations
+
+The application implements several performance optimizations:
+
+1. **Data Pagination**: Limit transaction fetching to manageable chunks
+2. **Lazy Loading**: Defer loading of visualization data until needed
+3. **Memoization**: Cache expensive computations using useMemo and useCallback
+4. **Virtualization**: Render only visible elements in large lists
+5. **Code Splitting**: Dynamically import components when needed
+6. **Progressive Rendering**: Show core UI quickly and load details progressively
+
 ## Security Considerations
 
 SolFlow implements several security measures:
@@ -224,26 +676,71 @@ SolFlow implements several security measures:
 4. **HTTPS**: Encrypted communication for all data transfers
 5. **Environment Variables**: Secure configuration using environment variables
 
-## Best Practices
-
-When using SolFlow, consider these best practices:
-
-1. **Start with Known Addresses**: Begin analysis with verified wallet addresses
-2. **Use Appropriate Filters**: Apply relevant date and amount filters to focus analysis
-3. **Save Important Visualizations**: Create snapshots of significant findings
-4. **Collaborate on Complex Cases**: Use team features for investigating complex transaction patterns
-5. **Add Contextual Annotations**: Document insights and observations directly on the visualization
-6. **Verify Findings**: Cross-reference findings with other blockchain explorers
-
 ## Troubleshooting
 
 Common issues and solutions:
 
-1. **Visualization Loading Slowly**: Try reducing the date range or applying more filters
-2. **Missing Transaction Data**: Some RPC providers have data limitations; try using a different endpoint
-3. **Team Member Can't Access Shared Visualization**: Verify they have the appropriate role permissions
-4. **Real-time Updates Not Working**: Check WebSocket connection status
-5. **Graph Layout Issues**: Try switching between different layout algorithms
+### Application Fails to Start
+
+If the application fails to start, check:
+
+1. Database connection: Ensure your PostgreSQL server is running and accessible
+2. Port conflicts: Make sure port 5000 is not in use by another application
+3. Environment variables: Verify all required environment variables are set correctly
+
+### Slow Transaction Loading
+
+If transaction data loads slowly:
+
+1. Check your Solana RPC endpoint performance
+2. Consider using a dedicated RPC service
+3. Apply more specific filters to reduce the amount of data fetched
+
+### Authentication Issues
+
+If you encounter login problems:
+
+1. Clear your browser cookies
+2. Check that the database tables for users and sessions are properly created
+3. Verify that the `SESSION_SECRET` environment variable is set
+
+### Missing Transaction Data
+
+If transaction data appears incomplete:
+
+1. Public RPC endpoints may have rate limits or data retention policies
+2. Some specialized transactions might not be parsed correctly
+3. Try using a dedicated RPC endpoint with complete historical data
+
+### Real-time Updates Not Working
+
+If you're not seeing real-time updates:
+
+1. Check your internet connection
+2. Refresh the page to reconnect the WebSocket
+3. Verify that you have the appropriate permissions
+4. Check if other real-time features (like presence indicators) are working
+
+## Development Workflow
+
+### Setting Up the Development Environment
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables:
+   ```
+   DATABASE_URL=postgresql://user:password@host:port/database
+   SOLANA_RPC_URL=https://your-solana-rpc-endpoint
+   ```
+4. Start the development server: `npm run dev`
+
+### Development Practices
+
+1. **Type Safety**: Use TypeScript for all code
+2. **Code Formatting**: Follow consistent formatting with Prettier
+3. **Linting**: Enforce code quality with ESLint
+4. **Commit Conventions**: Use conventional commits
+5. **Pull Request Process**: Code reviews for all changes
 
 ## Future Roadmap
 
