@@ -21,8 +21,8 @@ export default function Home() {
     }
 
     setError("");
-    // Navigate to the visualization page with the wallet address
-    window.location.href = `/visualization/${walletAddress}`;
+    // Navigate to the RPC-based visualization page with the wallet address
+    window.location.href = `/rpc-visualization/${walletAddress}`;
   };
 
   return (
@@ -154,7 +154,7 @@ export default function Home() {
         <h2 className="text-3xl font-bold mb-6">Ready to Explore Solana Transactions?</h2>
         <Button 
           className="bg-solana-secondary text-solana-dark hover:bg-opacity-90 font-bold py-3 px-8 rounded-md text-lg transition"
-          onClick={() => window.location.href = "/visualization"}
+          onClick={() => window.location.href = "/rpc-visualization"}
         >
           Start Visualizing
         </Button>

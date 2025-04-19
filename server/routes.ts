@@ -871,27 +871,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve visualization page with different URL for new version
+  // Redirect old visualization routes to new RPC-based visualization
   app.get(["/visualization", "/visualization/:address"], (req, res) => {
-    const vizHtmlPath = path.resolve(process.cwd(), "static", "visualization.html");
+    // Extract any address parameter
+    const address = req.params.address || '';
     
-    // Add cache control headers to prevent caching
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Surrogate-Control', 'no-store');
-    
-    try {
-      if (fs.existsSync(vizHtmlPath)) {
-        console.log(`Serving visualization HTML from: ${vizHtmlPath} for path: ${req.path}`);
-        return res.sendFile(vizHtmlPath);
-      } else {
-        console.error(`Visualization HTML file not found at: ${vizHtmlPath}`);
-        return res.status(404).send("Visualization HTML file not found");
-      }
-    } catch (error) {
-      console.error("Error serving visualization file:", error);
-      return res.status(500).send("Error serving visualization HTML file");
+    // Redirect to the new RPC visualization with the address if provided
+    if (address) {
+      console.log(`Redirecting visualization request for ${address} to RPC-based visualization`);
+      return res.redirect(`/rpc-visualization/${address}`);
+    } else {
+      console.log(`Redirecting visualization request to RPC-based visualization`);
+      return res.redirect('/rpc-visualization');
     }
   });
   

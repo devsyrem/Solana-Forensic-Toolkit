@@ -36,8 +36,8 @@ export default function Header() {
             </Link>
           </div>
           <nav className="hidden md:ml-8 md:flex md:space-x-8">
-            <Link href="/visualization">
-              <a className={`${location === '/visualization' ? 'text-solana-secondary' : 'text-gray-300 hover:text-white hover:bg-solana-dark-light'} font-medium px-3 py-2 rounded-md`}>
+            <Link href="/rpc-visualization">
+              <a className={`${location.startsWith('/rpc-visualization') || location.startsWith('/visualization') ? 'text-solana-secondary' : 'text-gray-300 hover:text-white hover:bg-solana-dark-light'} font-medium px-3 py-2 rounded-md`}>
                 Visualize
               </a>
             </Link>

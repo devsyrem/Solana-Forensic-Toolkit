@@ -17,7 +17,10 @@ function Router() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={Home} />
+          {/* Using server-side redirects for old visualization routes */}
           <Route path="/visualization/:walletAddress?" component={Visualization} />
+          {/* New RPC-based visualization route */}
+          <Route path="/rpc-visualization/:walletAddress?" component={Visualization} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/help" component={Help} />
           <Route component={NotFound} />
