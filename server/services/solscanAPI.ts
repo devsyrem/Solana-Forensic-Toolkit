@@ -1,44 +1,22 @@
 import fetch from 'node-fetch';
 import { log } from '../vite';
 
-const SOLSCAN_API_BASE = 'https://public-api.solscan.io/v1';
+const SOLSCAN_API_BASE = 'https://public-api.solscan.io';
 const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
-const FETCH_TIMEOUT = 10000; // 10 seconds timeout
-
-// Custom timeout utility for node-fetch v2
-const fetchWithTimeout = (url: string, options: RequestInit) => {
-  return new Promise<Response>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error(`Request timed out for URL: ${url}`));
-    }, FETCH_TIMEOUT);
-    
-    fetch(url, options)
-      .then(response => {
-        clearTimeout(timeout);
-        resolve(response);
-      })
-      .catch(error => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-  });
-};
 
 // Function to fetch account information from Solscan
 export async function getAccountInfo(address: string) {
   try {
     // Build URL with query parameters
-    const url = new URL(`${SOLSCAN_API_BASE}/account`);
-    url.searchParams.append('address', address);
+    const url = `${SOLSCAN_API_BASE}/account?address=${encodeURIComponent(address)}`;
 
-    const response = await fetchWithTimeout(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
         'token': SOLSCAN_API_KEY || '',
         'user-agent': 'SolFlow Analytics App'
-      },
-      redirect: 'follow'
+      }
     });
 
     if (!response.ok) {
@@ -57,22 +35,19 @@ export async function getAccountInfo(address: string) {
 export async function getTransactionSignatures(address: string, limit: number = 10, before?: string) {
   try {
     // Build URL with query parameters
-    const url = new URL(`${SOLSCAN_API_BASE}/account/transactions`);
-    url.searchParams.append('address', address);
-    url.searchParams.append('limit', limit.toString());
+    let url = `${SOLSCAN_API_BASE}/account/transactions?address=${encodeURIComponent(address)}&limit=${limit}`;
     
     if (before) {
-      url.searchParams.append('beforeSignature', before);
+      url += `&beforeSignature=${encodeURIComponent(before)}`;
     }
 
-    const response = await fetchWithTimeout(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
         'token': SOLSCAN_API_KEY || '',
         'user-agent': 'SolFlow Analytics App'
-      },
-      redirect: 'follow'
+      }
     });
 
     if (!response.ok) {
@@ -91,17 +66,15 @@ export async function getTransactionSignatures(address: string, limit: number = 
 export async function getTransactionDetails(signature: string) {
   try {
     // Build URL with query parameters
-    const url = new URL(`${SOLSCAN_API_BASE}/transaction`);
-    url.searchParams.append('signature', signature);
+    const url = `${SOLSCAN_API_BASE}/transaction?signature=${encodeURIComponent(signature)}`;
 
-    const response = await fetchWithTimeout(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
         'token': SOLSCAN_API_KEY || '',
         'user-agent': 'SolFlow Analytics App'
-      },
-      redirect: 'follow'
+      }
     });
 
     if (!response.ok) {
@@ -120,17 +93,15 @@ export async function getTransactionDetails(signature: string) {
 export async function getTokenHoldings(address: string) {
   try {
     // Build URL with query parameters
-    const url = new URL(`${SOLSCAN_API_BASE}/account/tokens`);
-    url.searchParams.append('address', address);
+    const url = `${SOLSCAN_API_BASE}/account/tokens?address=${encodeURIComponent(address)}`;
 
-    const response = await fetchWithTimeout(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
         'token': SOLSCAN_API_KEY || '',
         'user-agent': 'SolFlow Analytics App'
-      },
-      redirect: 'follow'
+      }
     });
 
     if (!response.ok) {
@@ -152,17 +123,15 @@ export async function checkSolscanApiStatus() {
     const testAddress = 'So11111111111111111111111111111111111111112'; // SOL token address
     
     // Build URL with query parameters
-    const url = new URL(`${SOLSCAN_API_BASE}/account`);
-    url.searchParams.append('address', testAddress);
+    const url = `${SOLSCAN_API_BASE}/account?address=${encodeURIComponent(testAddress)}`;
 
-    const response = await fetchWithTimeout(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
         'token': SOLSCAN_API_KEY || '',
         'user-agent': 'SolFlow Analytics App'
-      },
-      redirect: 'follow'
+      }
     });
 
     if (!response.ok) {
